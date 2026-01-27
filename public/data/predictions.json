@@ -1,0 +1,169 @@
+{
+  "generated_at": "2026-01-27T12:00:00Z",
+  "region": "Colorado",
+  "total_trails": 5,
+  "summary": {
+    "rideable": 2,
+    "likely_rideable": 1,
+    "likely_muddy": 1,
+    "muddy": 1,
+    "snow": 0,
+    "unknown": 0
+  },
+  "trails": [
+    {
+      "id": 1,
+      "cotrex_id": "cotrex_sample_1",
+      "name": "Apex Trail",
+      "centroid_lat": 39.7542,
+      "centroid_lon": -105.2215,
+      "condition": "rideable",
+      "confidence": 85,
+      "hours_since_rain": 96,
+      "effective_dry_hours": 36,
+      "factors": {
+        "soil": "Well drained",
+        "aspect": "S",
+        "elevation_min": 2012,
+        "elevation_max": 2256,
+        "recent_precip_mm": 5.2,
+        "base_dry_hours": 24
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-105.2315, 39.7442],
+          [-105.2295, 39.7462],
+          [-105.2275, 39.7482],
+          [-105.2255, 39.7502],
+          [-105.2235, 39.7522],
+          [-105.2215, 39.7542],
+          [-105.2195, 39.7562],
+          [-105.2175, 39.7582],
+          [-105.2155, 39.7602],
+          [-105.2135, 39.7622]
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "cotrex_id": "cotrex_sample_2",
+      "name": "Betasso Link Trail",
+      "centroid_lat": 40.0211,
+      "centroid_lon": -105.3421,
+      "condition": "rideable",
+      "confidence": 90,
+      "hours_since_rain": 120,
+      "effective_dry_hours": 30,
+      "factors": {
+        "soil": "Well drained",
+        "aspect": "SE",
+        "elevation_min": 1920,
+        "elevation_max": 2100,
+        "recent_precip_mm": 2.1,
+        "base_dry_hours": 24
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-105.3521, 40.0111],
+          [-105.3481, 40.0151],
+          [-105.3441, 40.0191],
+          [-105.3401, 40.0231],
+          [-105.3361, 40.0271],
+          [-105.3321, 40.0311]
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "cotrex_id": "cotrex_sample_3",
+      "name": "Hall Ranch - Nelson Loop",
+      "centroid_lat": 40.1125,
+      "centroid_lon": -105.3012,
+      "condition": "likely_rideable",
+      "confidence": 75,
+      "hours_since_rain": 48,
+      "effective_dry_hours": 40,
+      "factors": {
+        "soil": "Moderately well drained",
+        "aspect": "E",
+        "elevation_min": 1750,
+        "elevation_max": 1980,
+        "recent_precip_mm": 8.5,
+        "base_dry_hours": 48
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-105.3112, 40.1025],
+          [-105.3072, 40.1065],
+          [-105.3032, 40.1105],
+          [-105.2992, 40.1145],
+          [-105.2952, 40.1185],
+          [-105.2912, 40.1225]
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "cotrex_id": "cotrex_sample_4",
+      "name": "White Ranch - Longhorn Trail",
+      "centroid_lat": 39.8012,
+      "centroid_lon": -105.2845,
+      "condition": "likely_muddy",
+      "confidence": 70,
+      "hours_since_rain": 24,
+      "effective_dry_hours": 56,
+      "factors": {
+        "soil": "Somewhat poorly drained",
+        "aspect": "N",
+        "elevation_min": 2100,
+        "elevation_max": 2450,
+        "recent_precip_mm": 15.2,
+        "base_dry_hours": 72
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-105.2945, 39.7912],
+          [-105.2905, 39.7952],
+          [-105.2865, 39.7992],
+          [-105.2825, 39.8032],
+          [-105.2785, 39.8072],
+          [-105.2745, 39.8112]
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "cotrex_id": "cotrex_sample_5",
+      "name": "Marshall Mesa Trail",
+      "centroid_lat": 39.9521,
+      "centroid_lon": -105.2312,
+      "condition": "muddy",
+      "confidence": 80,
+      "hours_since_rain": 12,
+      "effective_dry_hours": 48,
+      "factors": {
+        "soil": "Moderately well drained",
+        "aspect": "NW",
+        "elevation_min": 1760,
+        "elevation_max": 1890,
+        "recent_precip_mm": 22.5,
+        "base_dry_hours": 48
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-105.2412, 39.9421],
+          [-105.2372, 39.9461],
+          [-105.2332, 39.9501],
+          [-105.2292, 39.9541],
+          [-105.2252, 39.9581],
+          [-105.2212, 39.9621]
+        ]
+      }
+    }
+  ]
+}

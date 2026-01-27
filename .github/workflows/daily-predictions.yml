@@ -1,0 +1,75 @@
+name: Daily Trail Predictions
+
+on:
+  # Run daily at 6am Mountain Time (13:00 UTC in winter, 12:00 UTC in summer)
+  schedule:
+    - cron: '0 13 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-predictions:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch weather data
+        run: npx tsx scripts/daily/fetch-weather.ts
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Generate predictions
+        run: npx tsx scripts/daily/generate-predictions.ts
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet public/data/predictions.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push predictions
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add public/data/predictions.json
+          git commit -m "Update trail predictions $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: Summary
+        run: |
+          echo "## Daily Predictions Update" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f public/data/predictions.json ]; then
+            TOTAL=$(jq '.total_trails' public/data/predictions.json)
+            RIDEABLE=$(jq '.summary.rideable // 0' public/data/predictions.json)
+            echo "- **Total trails:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+            echo "- **Rideable:** $RIDEABLE" >> $GITHUB_STEP_SUMMARY
+            echo "- **Generated at:** $(jq -r '.generated_at' public/data/predictions.json)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ predictions.json not found" >> $GITHUB_STEP_SUMMARY
+          fi
