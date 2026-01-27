@@ -6,7 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "etl:fetch": "tsx scripts/etl/fetch-cotrex.ts",
+    "etl:soil": "tsx scripts/etl/enrich-soil.ts",
+    "etl:elevation": "tsx scripts/etl/enrich-elevation.ts",
+    "etl:seed": "tsx scripts/etl/seed-database.ts",
+    "daily:weather": "tsx scripts/daily/fetch-weather.ts",
+    "daily:predictions": "tsx scripts/daily/generate-predictions.ts",
+    "daily": "npm run daily:weather && npm run daily:predictions"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.93.2",
