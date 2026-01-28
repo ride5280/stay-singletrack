@@ -6,7 +6,16 @@ import { PredictionsData, TrailCondition } from '@/lib/types';
 import { calculateStats, filterByCondition, filterByRegion, formatTimeSince } from '@/lib/predictions';
 import { FilterControls, MobileFilterControls } from '@/components/FilterControls';
 import { MapLegend } from '@/components/TrailMap';
-import { TrailCard } from '@/components/TrailCard';
+import { TrailCard, TrailCardSkeleton } from '@/components/TrailCard';
+import { 
+  Filter, 
+  Map, 
+  List, 
+  RefreshCw, 
+  CheckCircle,
+  Construction,
+  Bike
+} from 'lucide-react';
 
 // Dynamic import for the map (no SSR since Leaflet needs window)
 const TrailMap = dynamic(
@@ -14,8 +23,11 @@ const TrailMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-        <div className="text-gray-400">Loading map...</div>
+      <div className="w-full h-full bg-[var(--background-secondary)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent" />
+          <span className="text-sm text-[var(--foreground-muted)]">Loading map...</span>
+        </div>
       </div>
     ),
   }
@@ -37,7 +49,7 @@ export default function HomePage() {
   
   // UI state
   const [showFilters, setShowFilters] = useState(false);
-  const [showList, setShowList] = useState(false);
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
   // Load predictions
   useEffect(() => {
@@ -62,10 +74,14 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="h-[calc(100vh-60px)] flex items-center justify-center">
+      <div className="h-[calc(100vh-60px)] flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mx-auto mb-4" />
-          <p className="text-gray-400">Loading trail conditions...</p>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-[var(--border)]" />
+            <div className="absolute inset-0 rounded-full border-4 border-green-500 border-t-transparent animate-spin" />
+            <Bike className="absolute inset-0 m-auto w-6 h-6 text-green-500" />
+          </div>
+          <p className="text-[var(--foreground-muted)]">Loading trail conditions...</p>
         </div>
       </div>
     );
@@ -73,16 +89,18 @@ export default function HomePage() {
 
   if (error || !predictions) {
     return (
-      <div className="h-[calc(100vh-60px)] flex items-center justify-center">
+      <div className="h-[calc(100vh-60px)] flex items-center justify-center bg-[var(--background)]">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-4xl mb-4">🚧</div>
-          <h2 className="text-xl font-bold text-white mb-2">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/10 flex items-center justify-center">
+            <Construction className="w-8 h-8 text-amber-500" />
+          </div>
+          <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">
             Trail Data Unavailable
           </h2>
-          <p className="text-gray-400 mb-4">
+          <p className="text-[var(--foreground-muted)] mb-4">
             {error || 'Unable to load trail predictions. This might be the first time running the app.'}
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--foreground-muted)]">
             Run the daily prediction scripts to generate trail data.
           </p>
         </div>
@@ -103,22 +121,23 @@ export default function HomePage() {
   const filteredStats = calculateStats(filteredTrails);
 
   return (
-    <div className="h-[calc(100vh-60px)] flex flex-col">
+    <div className="h-[calc(100vh-60px)] flex flex-col bg-[var(--background)]">
       {/* Top bar with stats */}
-      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between text-sm">
-        <div className="flex items-center gap-4">
-          <span className="text-gray-400">
-            Updated {formatTimeSince(predictions.generated_at)}
-          </span>
-          <span className="hidden sm:inline text-gray-600">|</span>
-          <span className="hidden sm:inline">
-            <span className="text-green-400">{stats.rideable + stats.likely_rideable}</span>
-            <span className="text-gray-400"> rideable</span>
-          </span>
-          <span className="hidden sm:inline text-gray-600">|</span>
-          <span className="hidden sm:inline">
-            <span className="text-gray-300">{predictions.total_trails}</span>
-            <span className="text-gray-400"> total trails</span>
+      <div className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-2.5 flex items-center justify-between text-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-[var(--foreground-muted)]">
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>{formatTimeSince(predictions.generated_at)}</span>
+          </div>
+          <span className="hidden sm:inline h-4 w-px bg-[var(--border)]" />
+          <div className="hidden sm:flex items-center gap-1.5">
+            <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+            <span className="text-green-500 font-medium">{stats.rideable + stats.likely_rideable}</span>
+            <span className="text-[var(--foreground-muted)]">rideable</span>
+          </div>
+          <span className="hidden sm:inline h-4 w-px bg-[var(--border)]" />
+          <span className="hidden sm:inline text-[var(--foreground-muted)]">
+            <span className="text-[var(--foreground)] font-medium">{predictions.total_trails}</span> total
           </span>
         </div>
         
@@ -126,42 +145,44 @@ export default function HomePage() {
           {/* Mobile filter toggle */}
           <button
             onClick={() => setShowFilters(true)}
-            className="lg:hidden flex items-center gap-1 px-3 py-1 bg-gray-700 rounded text-gray-300 hover:bg-gray-600"
+            className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--background-secondary)] hover:bg-[var(--background-tertiary)] text-[var(--foreground-secondary)] transition-colors"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            Filters
+            <Filter className="w-4 h-4" />
+            <span>Filters</span>
           </button>
           
-          {/* List toggle */}
-          <button
-            onClick={() => setShowList(!showList)}
-            className="flex items-center gap-1 px-3 py-1 bg-gray-700 rounded text-gray-300 hover:bg-gray-600"
-          >
-            {showList ? (
-              <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                </svg>
-                Map
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                </svg>
-                List
-              </>
-            )}
-          </button>
+          {/* View toggle */}
+          <div className="flex rounded-lg bg-[var(--background-secondary)] p-1">
+            <button
+              onClick={() => setViewMode('map')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                viewMode === 'map'
+                  ? 'bg-[var(--surface)] text-[var(--foreground)] shadow-sm'
+                  : 'text-[var(--foreground-muted)] hover:text-[var(--foreground)]'
+              }`}
+            >
+              <Map className="w-4 h-4" />
+              <span className="hidden sm:inline">Map</span>
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                viewMode === 'list'
+                  ? 'bg-[var(--surface)] text-[var(--foreground)] shadow-sm'
+                  : 'text-[var(--foreground-muted)] hover:text-[var(--foreground)]'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">List</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar filters (desktop) */}
-        <aside className="hidden lg:block w-72 bg-gray-850 border-r border-gray-700 p-4 overflow-y-auto">
+        <aside className="hidden lg:block w-80 bg-[var(--surface)] border-r border-[var(--border)] p-5 overflow-y-auto">
           <FilterControls
             selectedConditions={selectedConditions}
             onConditionsChange={setSelectedConditions}
@@ -170,25 +191,48 @@ export default function HomePage() {
             stats={stats}
           />
           
-          <div className="mt-4">
+          <div className="mt-6">
             <MapLegend />
           </div>
         </aside>
 
         {/* Map or List view */}
         <main className="flex-1 relative">
-          {showList ? (
-            <div className="h-full overflow-y-auto p-4">
-              <div className="max-w-3xl mx-auto space-y-3">
-                <div className="text-sm text-gray-400 mb-4">
-                  Showing {filteredTrails.length} trails
+          {viewMode === 'list' ? (
+            <div className="h-full overflow-y-auto p-4 bg-[var(--background)]">
+              <div className="max-w-3xl mx-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-[var(--foreground)]">
+                    {filteredTrails.length} Trails
+                  </h2>
+                  <span className="text-sm text-[var(--foreground-muted)]">
+                    Sorted by condition
+                  </span>
                 </div>
-                {filteredTrails.map((trail) => (
-                  <TrailCard key={trail.id} trail={trail} />
-                ))}
+                
+                <div className="space-y-3">
+                  {filteredTrails.map((trail, index) => (
+                    <div 
+                      key={trail.id} 
+                      className="animate-fade-in"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      <TrailCard trail={trail} />
+                    </div>
+                  ))}
+                </div>
+                
                 {filteredTrails.length === 0 && (
-                  <div className="text-center py-12 text-gray-400">
-                    No trails match your filters
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--background-secondary)] flex items-center justify-center">
+                      <Filter className="w-8 h-8 text-[var(--foreground-muted)]" />
+                    </div>
+                    <h3 className="text-lg font-medium text-[var(--foreground)] mb-1">
+                      No trails match your filters
+                    </h3>
+                    <p className="text-[var(--foreground-muted)]">
+                      Try adjusting your filter settings
+                    </p>
                   </div>
                 )}
               </div>
@@ -201,7 +245,7 @@ export default function HomePage() {
           )}
 
           {/* Legend (mobile, on map view) */}
-          {!showList && (
+          {viewMode === 'map' && (
             <div className="lg:hidden absolute bottom-4 left-4">
               <MapLegend />
             </div>

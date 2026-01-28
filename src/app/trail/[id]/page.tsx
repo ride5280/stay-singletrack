@@ -5,6 +5,20 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { TrailPrediction, CONDITION_LABELS, ASPECT_MODIFIERS } from '@/lib/types';
 import { ConditionBadge } from '@/components/ConditionBadge';
+import { 
+  ArrowLeft, 
+  Mountain, 
+  Sun, 
+  CloudRain, 
+  Layers, 
+  Clock,
+  ThumbsUp,
+  X,
+  Droplets,
+  Snowflake,
+  CheckCircle,
+  Search
+} from 'lucide-react';
 
 // Dynamic import for the mini map
 const TrailMap = dynamic(
@@ -12,8 +26,11 @@ const TrailMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-48 bg-gray-700 rounded-lg flex items-center justify-center">
-        <div className="text-gray-400 text-sm">Loading map...</div>
+      <div className="w-full h-48 bg-[var(--background-secondary)] rounded-xl flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-green-500 border-t-transparent" />
+          <span className="text-sm text-[var(--foreground-muted)]">Loading map...</span>
+        </div>
       </div>
     ),
   }
@@ -53,26 +70,29 @@ export default function TrailDetailPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-60px)] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500" />
+      <div className="min-h-[calc(100vh-60px)] flex items-center justify-center bg-[var(--background)]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent" />
       </div>
     );
   }
 
   if (!trail) {
     return (
-      <div className="min-h-[calc(100vh-60px)] flex items-center justify-center">
+      <div className="min-h-[calc(100vh-60px)] flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
-          <div className="text-4xl mb-4">🔍</div>
-          <h2 className="text-xl font-bold text-white mb-2">Trail Not Found</h2>
-          <p className="text-gray-400 mb-4">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--background-secondary)] flex items-center justify-center">
+            <Search className="w-8 h-8 text-[var(--foreground-muted)]" />
+          </div>
+          <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">Trail Not Found</h2>
+          <p className="text-[var(--foreground-muted)] mb-4">
             We couldn&apos;t find this trail in our database.
           </p>
           <Link
             href="/"
-            className="text-green-400 hover:text-green-300"
+            className="inline-flex items-center gap-2 text-green-500 hover:text-green-400 transition-colors"
           >
-            ← Back to map
+            <ArrowLeft className="w-4 h-4" />
+            Back to map
           </Link>
         </div>
       </div>
@@ -95,46 +115,52 @@ export default function TrailDetailPage({ params }: PageProps) {
     : null;
 
   return (
-    <div className="max-w-4xl mx-auto p-4 pb-8">
+    <div className="max-w-4xl mx-auto p-4 pb-8 bg-[var(--background)]">
       {/* Back link */}
       <Link
         href="/"
-        className="inline-flex items-center gap-1 text-gray-400 hover:text-white mb-6"
+        className="inline-flex items-center gap-1.5 text-[var(--foreground-muted)] hover:text-[var(--foreground)] mb-6 transition-colors"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
+        <ArrowLeft className="w-4 h-4" />
         Back to map
       </Link>
 
       {/* Trail header */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-6">
+      <div className="card p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
             {trail.name}
           </h1>
           <ConditionBadge condition={trail.condition} size="lg" />
         </div>
 
-        <div className="flex items-center gap-4 text-gray-400">
-          <span className="flex items-center gap-1">
-            <span className="text-green-400 font-medium">{trail.confidence}%</span> confident
-          </span>
-          <span className="text-gray-600">•</span>
-          <span>
-            Last rain{' '}
-            {trail.hours_since_rain < 24
-              ? `${trail.hours_since_rain} hours`
-              : `${Math.round(trail.hours_since_rain / 24)} days`}{' '}
-            ago
-          </span>
+        <div className="flex flex-wrap items-center gap-4 text-[var(--foreground-muted)]">
+          <div className="flex items-center gap-1.5">
+            <div 
+              className="w-2.5 h-2.5 rounded-full bg-green-500"
+              style={{ opacity: trail.confidence / 100 }}
+            />
+            <span className="text-green-500 font-medium">{trail.confidence}%</span>
+            <span>confident</span>
+          </div>
+          <span className="w-1 h-1 rounded-full bg-[var(--border-strong)]" />
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-4 h-4" />
+            <span>
+              Rain{' '}
+              {trail.hours_since_rain < 24
+                ? `${trail.hours_since_rain} hours`
+                : `${Math.round(trail.hours_since_rain / 24)} days`}{' '}
+              ago
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Mini map */}
-      <div className="bg-gray-800 rounded-lg p-4 mb-6">
-        <h2 className="text-lg font-semibold text-white mb-3">Trail Location</h2>
-        <div className="h-48 rounded-lg overflow-hidden">
+      <div className="card p-5 mb-6">
+        <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">Trail Location</h2>
+        <div className="h-52 rounded-xl overflow-hidden border border-[var(--border)]">
           <TrailMap
             trails={[trail]}
             center={[trail.centroid_lat, trail.centroid_lon]}
@@ -144,20 +170,22 @@ export default function TrailDetailPage({ params }: PageProps) {
       </div>
 
       {/* Why this prediction */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold text-white mb-4">
+      <div className="card p-6 mb-6">
+        <h2 className="text-lg font-semibold text-[var(--foreground)] mb-5">
           Why This Prediction?
         </h2>
         
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Soil drainage */}
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">🪨</span>
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+              <Layers className="w-5 h-5 text-amber-500" />
+            </div>
             <div>
-              <div className="font-medium text-white">
+              <div className="font-medium text-[var(--foreground)]">
                 Soil: {trail.factors.soil || 'Unknown'}
               </div>
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-[var(--foreground-muted)]">
                 Base drying time: {trail.factors.base_dry_hours} hours
               </div>
             </div>
@@ -165,13 +193,15 @@ export default function TrailDetailPage({ params }: PageProps) {
 
           {/* Aspect */}
           {trail.factors.aspect && (
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">☀️</span>
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+                <Sun className="w-5 h-5 text-yellow-500" />
+              </div>
               <div>
-                <div className="font-medium text-white">
+                <div className="font-medium text-[var(--foreground)]">
                   Aspect: {trail.factors.aspect}-facing
                 </div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-[var(--foreground-muted)]">
                   {aspectExplanation}
                 </div>
               </div>
@@ -180,16 +210,18 @@ export default function TrailDetailPage({ params }: PageProps) {
 
           {/* Elevation */}
           {elevationMinFt && (
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">⛰️</span>
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                <Mountain className="w-5 h-5 text-blue-500" />
+              </div>
               <div>
-                <div className="font-medium text-white">
+                <div className="font-medium text-[var(--foreground)]">
                   Elevation: {elevationMinFt.toLocaleString()}&apos;
                   {elevationMaxFt && elevationMaxFt !== elevationMinFt && (
                     <> - {elevationMaxFt.toLocaleString()}&apos;</>
                   )}
                 </div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-[var(--foreground-muted)]">
                   {(trail.factors.elevation_min ?? 0) > 2438
                     ? 'Higher elevation = slower drying'
                     : 'Lower elevation = faster drying'}
@@ -199,26 +231,30 @@ export default function TrailDetailPage({ params }: PageProps) {
           )}
 
           {/* Recent precipitation */}
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">🌧️</span>
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
+              <CloudRain className="w-5 h-5 text-cyan-500" />
+            </div>
             <div>
-              <div className="font-medium text-white">
+              <div className="font-medium text-[var(--foreground)]">
                 Recent Precipitation: {trail.factors.recent_precip_mm.toFixed(1)} mm
               </div>
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-[var(--foreground-muted)]">
                 in the last 7 days
               </div>
             </div>
           </div>
 
           {/* Effective dry time */}
-          <div className="mt-4 pt-4 border-t border-gray-700">
-            <div className="bg-gray-700/50 rounded-lg p-4">
-              <div className="text-sm text-gray-400 mb-1">Effective Dry Time</div>
-              <div className="text-2xl font-bold text-white">
+          <div className="mt-6 pt-5 border-t border-[var(--border)]">
+            <div className="bg-[var(--background-secondary)] rounded-xl p-5">
+              <div className="text-sm text-[var(--foreground-muted)] mb-1">
+                Effective Dry Time
+              </div>
+              <div className="text-3xl font-bold text-[var(--foreground)]">
                 ~{trail.effective_dry_hours} hours
               </div>
-              <div className="text-sm text-gray-400 mt-1">
+              <div className="text-sm text-[var(--foreground-muted)] mt-1">
                 after significant rain ({'>'}2.5mm)
               </div>
             </div>
@@ -227,16 +263,16 @@ export default function TrailDetailPage({ params }: PageProps) {
       </div>
 
       {/* Report condition */}
-      <div className="bg-gray-800 rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">
+      <div className="card p-6">
+        <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">
           Been There Recently?
         </h2>
-        <p className="text-gray-400 mb-4">
+        <p className="text-[var(--foreground-muted)] mb-5">
           Help other riders by reporting the current conditions.
         </p>
         <button
           onClick={() => setShowReportModal(true)}
-          className="w-full sm:w-auto bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+          className="w-full sm:w-auto px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors"
         >
           Report Conditions
         </button>
@@ -269,10 +305,10 @@ function ReportConditionModal({
   const [submitted, setSubmitted] = useState(false);
 
   const conditions = [
-    { id: 'dry', label: 'Dry', emoji: '🏜️', description: 'Dusty, no mud' },
-    { id: 'tacky', label: 'Tacky', emoji: '👌', description: 'Perfect grip' },
-    { id: 'muddy', label: 'Muddy', emoji: '💧', description: 'Wet, slippery' },
-    { id: 'snow', label: 'Snow/Ice', emoji: '❄️', description: 'Winter conditions' },
+    { id: 'dry', label: 'Dry', Icon: Sun, color: 'amber', description: 'Dusty, no mud' },
+    { id: 'tacky', label: 'Tacky', Icon: CheckCircle, color: 'green', description: 'Perfect grip' },
+    { id: 'muddy', label: 'Muddy', Icon: Droplets, color: 'blue', description: 'Wet, slippery' },
+    { id: 'snow', label: 'Snow/Ice', Icon: Snowflake, color: 'cyan', description: 'Winter conditions' },
   ];
 
   const handleSubmit = async () => {
@@ -302,63 +338,68 @@ function ReportConditionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
-      <div className="bg-gray-800 rounded-lg w-full max-w-md p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      
+      <div className="relative bg-[var(--surface)] rounded-2xl w-full max-w-md p-6 shadow-xl border border-[var(--border)] animate-slide-up">
         {submitted ? (
           <div className="text-center py-8">
-            <div className="text-4xl mb-4">🙏</div>
-            <h3 className="text-xl font-bold text-white mb-2">Thanks!</h3>
-            <p className="text-gray-400">Your report helps other riders.</p>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
+              <ThumbsUp className="w-8 h-8 text-green-500" />
+            </div>
+            <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">Thanks!</h3>
+            <p className="text-[var(--foreground-muted)]">Your report helps other riders.</p>
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">
                 Report Conditions
               </h3>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-white"
+                className="p-2 rounded-lg hover:bg-[var(--background-secondary)] transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5 text-[var(--foreground-muted)]" />
               </button>
             </div>
 
-            <p className="text-gray-400 text-sm mb-4">
-              How&apos;s <span className="text-white">{trailName}</span> right now?
+            <p className="text-[var(--foreground-muted)] text-sm mb-5">
+              How&apos;s <span className="text-[var(--foreground)] font-medium">{trailName}</span> right now?
             </p>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
-              {conditions.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCondition(c.id)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    selectedCondition === c.id
-                      ? 'border-green-500 bg-green-500/10'
-                      : 'border-gray-600 hover:border-gray-500'
-                  }`}
-                >
-                  <div className="text-3xl mb-2">{c.emoji}</div>
-                  <div className="font-medium text-white">{c.label}</div>
-                  <div className="text-xs text-gray-400">{c.description}</div>
-                </button>
-              ))}
+              {conditions.map((c) => {
+                const Icon = c.Icon;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedCondition(c.id)}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      selectedCondition === c.id
+                        ? 'border-green-500 bg-green-500/10'
+                        : 'border-[var(--border)] hover:border-[var(--border-strong)]'
+                    }`}
+                  >
+                    <Icon className={`w-8 h-8 mb-2 text-${c.color}-500`} />
+                    <div className="font-medium text-[var(--foreground)]">{c.label}</div>
+                    <div className="text-xs text-[var(--foreground-muted)]">{c.description}</div>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600"
+                className="flex-1 px-4 py-2.5 bg-[var(--background-secondary)] text-[var(--foreground-secondary)] rounded-xl hover:bg-[var(--background-tertiary)] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!selectedCondition || submitting}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2.5 bg-green-500 text-white rounded-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {submitting ? 'Submitting...' : 'Submit'}
               </button>

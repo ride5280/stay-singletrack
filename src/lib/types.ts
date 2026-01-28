@@ -103,6 +103,7 @@ export interface TrailPrediction {
 export interface PredictionsData {
   generated_at: string;
   region: string;
+  total_trails: number;
   trails: TrailPrediction[];
 }
 

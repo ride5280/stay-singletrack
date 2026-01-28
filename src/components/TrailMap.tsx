@@ -1,25 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
+import { useEffect, useState, useRef } from 'react';
 import { TrailPrediction, CONDITION_COLORS, CONDITION_LABELS, TrailCondition } from '@/lib/types';
 import { ConditionBadge } from './ConditionBadge';
+import { useTheme } from 'next-themes';
 import Link from 'next/link';
-
-// Fix Leaflet default marker icon issue
-import 'leaflet/dist/leaflet.css';
-
-// Leaflet icon fix for Next.js
-const fixLeafletIcons = () => {
-  // @ts-expect-error - Leaflet icon path fix
-  delete L.Icon.Default.prototype._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  });
-};
+import { Clock, Mountain, ArrowRight, CheckCircle, Circle, AlertCircle, XCircle, Snowflake, Loader2 } from 'lucide-react';
 
 interface TrailMapProps {
   trails: TrailPrediction[];
@@ -27,17 +13,6 @@ interface TrailMapProps {
   center?: [number, number];
   zoom?: number;
   onTrailClick?: (trail: TrailPrediction) => void;
-}
-
-// Component to handle map interactions
-function MapController({ center, zoom }: { center: [number, number]; zoom: number }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [map, center, zoom]);
-  
-  return null;
 }
 
 export function TrailMap({
@@ -48,20 +23,60 @@ export function TrailMap({
   onTrailClick,
 }: TrailMapProps) {
   const [mounted, setMounted] = useState(false);
-  const [selectedTrail, setSelectedTrail] = useState<TrailPrediction | null>(null);
+  const [MapComponents, setMapComponents] = useState<{
+    MapContainer: React.ComponentType<any>;
+    TileLayer: React.ComponentType<any>;
+    GeoJSON: React.ComponentType<any>;
+    Popup: React.ComponentType<any>;
+    useMap: () => any;
+  } | null>(null);
+  const { resolvedTheme } = useTheme();
+  const mapRef = useRef<any>(null);
 
+  // Dynamically import Leaflet components only on client
   useEffect(() => {
-    fixLeafletIcons();
-    setMounted(true);
+    const loadLeaflet = async () => {
+      // Import Leaflet and react-leaflet
+      const L = (await import('leaflet')).default;
+      const { MapContainer, TileLayer, GeoJSON, Popup, useMap } = await import('react-leaflet');
+      
+      // Load CSS by adding link element
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+
+      // Fix Leaflet icon issue
+      // @ts-expect-error - Leaflet icon path fix
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      });
+
+      setMapComponents({ MapContainer, TileLayer, GeoJSON, Popup, useMap });
+      setMounted(true);
+    };
+
+    loadLeaflet();
   }, []);
 
-  if (!mounted) {
+  if (!mounted || !MapComponents) {
     return (
-      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-        <div className="text-gray-400">Loading map...</div>
+      <div className="w-full h-full bg-[var(--background-secondary)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-green-500 animate-spin" />
+          <span className="text-sm text-[var(--foreground-muted)]">Loading map...</span>
+        </div>
       </div>
     );
   }
+
+  const { MapContainer, TileLayer, GeoJSON, Popup } = MapComponents;
 
   // Filter trails by selected conditions
   const filteredTrails = selectedConditions
@@ -75,19 +90,23 @@ export function TrailMap({
     opacity: 0.8,
   });
 
+  // Choose map tiles based on theme
+  const tileUrl = resolvedTheme === 'dark'
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
   return (
     <MapContainer
       center={center}
       zoom={zoom}
       className="w-full h-full"
-      style={{ background: '#1a1a2e' }}
+      style={{ background: resolvedTheme === 'dark' ? '#1a1a2e' : '#f5f5f5' }}
+      ref={mapRef}
     >
-      <MapController center={center} zoom={zoom} />
-      
-      {/* Dark map tiles */}
+      {/* Map tiles that match theme */}
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        url={tileUrl}
       />
 
       {/* Trail lines */}
@@ -98,17 +117,16 @@ export function TrailMap({
           style={() => getTrailStyle(trail.condition)}
           eventHandlers={{
             click: () => {
-              setSelectedTrail(trail);
               onTrailClick?.(trail);
             },
-            mouseover: (e) => {
+            mouseover: (e: any) => {
               const layer = e.target;
               layer.setStyle({
                 weight: 5,
                 opacity: 1,
               });
             },
-            mouseout: (e) => {
+            mouseout: (e: any) => {
               const layer = e.target;
               layer.setStyle(getTrailStyle(trail.condition));
             },
@@ -126,36 +144,47 @@ export function TrailMap({
 // Popup content for trail
 function TrailPopup({ trail }: { trail: TrailPrediction }) {
   return (
-    <div className="min-w-[200px]">
-      <h3 className="font-bold text-lg mb-2 text-gray-900">{trail.name}</h3>
+    <div className="min-w-[220px] p-1">
+      <h3 className="font-bold text-lg mb-2 text-[var(--foreground)]">{trail.name}</h3>
       
       <div className="mb-3">
         <ConditionBadge condition={trail.condition} />
       </div>
       
-      <div className="text-sm space-y-1 text-gray-700">
-        <div>
-          <span className="font-medium">Confidence:</span> {trail.confidence}%
+      <div className="text-sm space-y-2 text-[var(--foreground-secondary)]">
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-2 h-2 rounded-full bg-green-500"
+            style={{ opacity: trail.confidence / 100 }}
+          />
+          <span><strong className="text-[var(--foreground)]">{trail.confidence}%</strong> confident</span>
         </div>
-        <div>
-          <span className="font-medium">Last rain:</span>{' '}
-          {trail.hours_since_rain < 24
-            ? `${trail.hours_since_rain} hours ago`
-            : `${Math.round(trail.hours_since_rain / 24)} days ago`}
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-[var(--foreground-muted)]" />
+          <span>
+            Rain{' '}
+            {trail.hours_since_rain < 24
+              ? `${trail.hours_since_rain} hours`
+              : `${Math.round(trail.hours_since_rain / 24)} days`}{' '}
+            ago
+          </span>
         </div>
         {trail.factors.elevation_min && (
-          <div>
-            <span className="font-medium">Elevation:</span>{' '}
-            {Math.round(trail.factors.elevation_min * 3.28084).toLocaleString()}'
+          <div className="flex items-center gap-2">
+            <Mountain className="w-4 h-4 text-[var(--foreground-muted)]" />
+            <span>
+              {Math.round(trail.factors.elevation_min * 3.28084).toLocaleString()}' elevation
+            </span>
           </div>
         )}
       </div>
       
       <Link
         href={`/trail/${trail.id}`}
-        className="mt-3 block text-center bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors"
+        className="mt-4 flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-medium transition-colors"
       >
-        View Details →
+        View Details
+        <ArrowRight className="w-4 h-4" />
       </Link>
     </div>
   );
@@ -163,19 +192,27 @@ function TrailPopup({ trail }: { trail: TrailPrediction }) {
 
 // Legend component
 export function MapLegend() {
-  const conditions: TrailCondition[] = ['rideable', 'likely_rideable', 'likely_muddy', 'muddy', 'snow'];
+  const conditions: { condition: TrailCondition; Icon: React.ComponentType<{ className?: string }> }[] = [
+    { condition: 'rideable', Icon: CheckCircle },
+    { condition: 'likely_rideable', Icon: Circle },
+    { condition: 'likely_muddy', Icon: AlertCircle },
+    { condition: 'muddy', Icon: XCircle },
+    { condition: 'snow', Icon: Snowflake },
+  ];
   
   return (
-    <div className="bg-gray-800/90 backdrop-blur p-3 rounded-lg shadow-lg">
-      <h4 className="text-sm font-semibold text-white mb-2">Trail Conditions</h4>
-      <div className="space-y-1">
-        {conditions.map((condition) => (
+    <div className="bg-[var(--surface)]/95 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-[var(--border)]">
+      <h4 className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide mb-2">
+        Conditions
+      </h4>
+      <div className="space-y-1.5">
+        {conditions.map(({ condition }) => (
           <div key={condition} className="flex items-center gap-2 text-sm">
             <div
-              className="w-4 h-1 rounded"
+              className="w-5 h-1.5 rounded-full"
               style={{ backgroundColor: CONDITION_COLORS[condition] }}
             />
-            <span className="text-gray-300">{CONDITION_LABELS[condition]}</span>
+            <span className="text-[var(--foreground-secondary)]">{CONDITION_LABELS[condition]}</span>
           </div>
         ))}
       </div>

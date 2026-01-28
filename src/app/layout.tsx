@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { Header } from "@/components/Header";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,23 +26,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-white min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
-        <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <h1 className="text-xl font-bold text-green-400">
-              🚵 Stay Singletrack
-            </h1>
-            <span className="text-sm text-gray-400">
-              Colorado Trail Conditions
-            </span>
+        <ThemeProvider>
+          <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
           </div>
-        </header>
-        <main className="flex-1">
-          {children}
-        </main>
+        </ThemeProvider>
       </body>
     </html>
   );
