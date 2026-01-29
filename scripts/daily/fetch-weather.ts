@@ -17,14 +17,20 @@ dotenv.config({ path: '.env.local' });
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 
 // Regions with center coordinates
-const REGIONS: Record<string, { lat: number; lon: number; name: string }> = {
-  front_range: { lat: 39.75, lon: -105.2, name: 'Front Range' },
-  boulder: { lat: 40.015, lon: -105.27, name: 'Boulder' },
-  golden: { lat: 39.75, lon: -105.22, name: 'Golden' },
-  denver: { lat: 39.74, lon: -104.99, name: 'Denver' },
-  colorado_springs: { lat: 38.83, lon: -104.82, name: 'Colorado Springs' },
-  fort_collins: { lat: 40.58, lon: -105.08, name: 'Fort Collins' },
-  summit_county: { lat: 39.6, lon: -106.0, name: 'Summit County' },
+const REGIONS: Record<string, { lat: number; lon: number; name: string; elevation_m: number }> = {
+  front_range: { lat: 39.75, lon: -105.2, name: 'Front Range', elevation_m: 1800 },
+  boulder: { lat: 40.015, lon: -105.27, name: 'Boulder', elevation_m: 1655 },
+  golden: { lat: 39.75, lon: -105.22, name: 'Golden', elevation_m: 1730 },
+  denver: { lat: 39.74, lon: -104.99, name: 'Denver', elevation_m: 1609 },
+  colorado_springs: { lat: 38.83, lon: -104.82, name: 'Colorado Springs', elevation_m: 1839 },
+  fort_collins: { lat: 40.58, lon: -105.08, name: 'Fort Collins', elevation_m: 1525 },
+  summit_county: { lat: 39.6, lon: -106.0, name: 'Summit County', elevation_m: 2926 },
+  leadville: { lat: 39.25, lon: -106.29, name: 'Leadville', elevation_m: 3094 },
+  aspen: { lat: 39.19, lon: -106.82, name: 'Aspen', elevation_m: 2438 },
+  durango: { lat: 37.28, lon: -107.88, name: 'Durango', elevation_m: 2003 },
+  steamboat: { lat: 40.48, lon: -106.83, name: 'Steamboat Springs', elevation_m: 2051 },
+  gunnison: { lat: 38.55, lon: -106.93, name: 'Gunnison', elevation_m: 2347 },
+  telluride: { lat: 37.94, lon: -107.81, name: 'Telluride', elevation_m: 2667 },
 };
 
 interface WeatherDay {

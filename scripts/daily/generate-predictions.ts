@@ -117,6 +117,13 @@ function getNearestRegion(lat: number, lon: number): string {
     denver: { lat: 39.74, lon: -104.99 },
     colorado_springs: { lat: 38.83, lon: -104.82 },
     fort_collins: { lat: 40.58, lon: -105.08 },
+    summit_county: { lat: 39.6, lon: -106.0 },
+    leadville: { lat: 39.25, lon: -106.29 },
+    aspen: { lat: 39.19, lon: -106.82 },
+    durango: { lat: 37.28, lon: -107.88 },
+    steamboat: { lat: 40.48, lon: -106.83 },
+    gunnison: { lat: 38.55, lon: -106.93 },
+    telluride: { lat: 37.94, lon: -107.81 },
   };
 
   let nearest = 'front_range';
@@ -190,8 +197,25 @@ function predictTrailCondition(
   // Elevation modifier (>8000ft / 2438m = slower drying)
   const elevMod = (trail.elevation_min && trail.elevation_min > 2438) ? 1.2 : 1.0;
   
-  // Temperature modifier
-  const avgTemp = calculateAvgTemp(weather, 3);
+  // Temperature modifier (with elevation lapse rate correction)
+  // Standard lapse rate: ~6.5°C per 1000m elevation gain
+  // Weather stations are at low elevations; trails can be much higher
+  const LAPSE_RATE = 6.5; // °C per 1000m
+  const STATION_ELEVATIONS: Record<string, number> = {
+    front_range: 1800, boulder: 1655, golden: 1730, denver: 1609,
+    colorado_springs: 1839, fort_collins: 1525, summit_county: 2926,
+    leadville: 3094, aspen: 2438, durango: 2003, steamboat: 2051,
+    gunnison: 2347, telluride: 2667,
+  };
+  const nearestRegion = getNearestRegion(trail.centroid_lat, trail.centroid_lon);
+  const stationElevation = STATION_ELEVATIONS[nearestRegion] || 1800;
+  const trailElevation = trail.elevation_min || stationElevation;
+  const elevDiffM = Math.max(0, trailElevation - stationElevation);
+  const lapseCorrection = (elevDiffM / 1000) * LAPSE_RATE;
+  
+  const stationAvgTemp = calculateAvgTemp(weather, 3);
+  const avgTemp = stationAvgTemp - lapseCorrection;
+  
   let tempMod: number;
   if (avgTemp > 20) {
     tempMod = 0.7;  // Hot = fast drying
@@ -245,10 +269,28 @@ async function generatePredictions(): Promise<void> {
 
   // Fetch all trails
   console.log('Fetching trails...');
-  const { data: trails, error: trailsError } = await supabase
-    .from('trails')
-    .select('*')
-    .eq('open_to_bikes', true);
+  // Fetch all trails (Supabase defaults to 1000 row limit, so paginate)
+  let allTrails: Trail[] = [];
+  let offset = 0;
+  const pageSize = 1000;
+  while (true) {
+    const { data: batch, error: batchError } = await supabase
+      .from('trails')
+      .select('*')
+      .eq('open_to_bikes', true)
+      .range(offset, offset + pageSize - 1);
+    
+    if (batchError) {
+      console.error('Error fetching trails:', batchError.message);
+      process.exit(1);
+    }
+    if (!batch || batch.length === 0) break;
+    allTrails = allTrails.concat(batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+  }
+  const trails = allTrails;
+  const trailsError = null;
 
   if (trailsError || !trails) {
     console.error('Error fetching trails:', trailsError?.message);
