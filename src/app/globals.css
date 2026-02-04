@@ -73,42 +73,80 @@ body {
 }
 
 /* Override Leaflet popup styles for both themes */
+/* Light mode popup styles */
 .leaflet-popup-content-wrapper {
-  background: var(--surface) !important;
-  color: var(--foreground) !important;
+  background: #ffffff !important;
+  color: #1c1917 !important;
   border-radius: 12px;
   box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
-.dark .leaflet-popup-content-wrapper {
-  background: var(--surface-elevated) !important;
-  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.3);
-}
-
 .leaflet-popup-tip {
-  background: var(--surface) !important;
+  background: #ffffff !important;
 }
 
-.dark .leaflet-popup-tip {
-  background: var(--surface-elevated) !important;
-}
-
-/* Ensure popup content inherits proper text colors */
 .leaflet-popup-content {
-  color: var(--foreground) !important;
+  color: #1c1917 !important;
 }
 
 .leaflet-popup-content h3,
 .leaflet-popup-content strong {
-  color: var(--foreground) !important;
+  color: #1c1917 !important;
 }
 
-/* Style regular links in popups with accent color */
 .leaflet-popup-content a {
-  color: var(--accent);
+  color: #16a34a !important;
 }
 
-/* Trail popup button - force white text on green background */
+.leaflet-popup-close-button {
+  color: #a8a29e !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #1c1917 !important;
+}
+
+/* Dark mode popup styles - use html.dark since Leaflet container may be outside .dark */
+html.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-content-wrapper {
+  background: #2d241e !important;
+  color: #f5f1ed !important;
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+}
+
+html.dark .leaflet-popup-tip,
+.dark .leaflet-popup-tip {
+  background: #2d241e !important;
+}
+
+html.dark .leaflet-popup-content,
+.dark .leaflet-popup-content {
+  color: #f5f1ed !important;
+}
+
+html.dark .leaflet-popup-content h3,
+html.dark .leaflet-popup-content strong,
+.dark .leaflet-popup-content h3,
+.dark .leaflet-popup-content strong {
+  color: #f5f1ed !important;
+}
+
+html.dark .leaflet-popup-content a,
+.dark .leaflet-popup-content a {
+  color: #7cb342 !important;
+}
+
+html.dark .leaflet-popup-close-button,
+.dark .leaflet-popup-close-button {
+  color: #948a7f !important;
+}
+
+html.dark .leaflet-popup-close-button:hover,
+.dark .leaflet-popup-close-button:hover {
+  color: #f5f1ed !important;
+}
+
+/* Trail popup button - force white text on green background (both modes) */
 .leaflet-popup-content a.trail-popup-btn,
 .leaflet-popup-content .trail-popup-btn {
   color: #ffffff !important;
@@ -119,14 +157,6 @@ body {
 .leaflet-popup-content a.trail-popup-btn:hover,
 .leaflet-popup-content .trail-popup-btn:hover {
   background-color: #16a34a !important;
-}
-
-.leaflet-popup-close-button {
-  color: var(--foreground-muted) !important;
-}
-
-.leaflet-popup-close-button:hover {
-  color: var(--foreground) !important;
 }
 
 /* Custom scrollbar */
