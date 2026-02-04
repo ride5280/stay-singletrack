@@ -18,6 +18,17 @@ export const metadata: Metadata = {
   title: "Stay Singletrack - Colorado Trail Conditions",
   description: "AI-powered trail condition predictions for Colorado trails. Know if trails are good to go before you head out.",
   keywords: ["trail conditions", "Colorado", "hiking", "running", "mountain biking", "trail status"],
+  metadataBase: new URL('https://stay-singletrack.vercel.app'),
+  openGraph: {
+    title: "Stay Singletrack",
+    description: "AI-powered trail condition predictions for Colorado trails",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Stay Singletrack",
+    description: "AI-powered trail condition predictions for Colorado trails",
+  },
 };
 
 export default function RootLayout({
