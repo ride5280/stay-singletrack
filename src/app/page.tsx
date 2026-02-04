@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { PredictionsData, TrailCondition } from '@/lib/types';
 import { calculateStats, filterByCondition, filterByRegion, formatTimeSince } from '@/lib/predictions';
 import { FilterControls, MobileFilterControls } from '@/components/FilterControls';
 import { VirtualizedTrailList } from '@/components/VirtualizedTrailList';
+import { LandingHero } from '@/components/LandingHero';
 import { 
   Filter, 
   Map, 
@@ -51,6 +52,8 @@ export default function HomePage() {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [refreshing, setRefreshing] = useState(false);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
+  const [showLanding, setShowLanding] = useState(true);
+  const mapSectionRef = useRef<HTMLDivElement>(null);
 
   // Load predictions from API
   async function loadData() {
@@ -92,6 +95,30 @@ export default function HomePage() {
   function handleRefresh() {
     setRefreshing(true);
     loadData();
+  }
+
+  // Handle explore click - scroll to map section
+  const handleExplore = () => {
+    setShowLanding(false);
+    // Small delay to allow state update, then scroll
+    setTimeout(() => {
+      mapSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  // Show landing page while loading or if user hasn't explored yet
+  if (showLanding) {
+    const stats = predictions ? {
+      total: predictions.total_trails,
+      rideable: (predictions.summary?.rideable || 0) + (predictions.summary?.likely_rideable || 0),
+    } : undefined;
+
+    return (
+      <LandingHero 
+        onExplore={handleExplore} 
+        stats={stats}
+      />
+    );
   }
 
   if (loading) {
@@ -143,7 +170,7 @@ export default function HomePage() {
   const filteredStats = calculateStats(filteredTrails);
 
   return (
-    <div className="h-[calc(100vh-60px)] flex flex-col bg-[var(--background)]">
+    <div ref={mapSectionRef} className="h-[calc(100vh-60px)] flex flex-col bg-[var(--background)]">
       {/* Top bar with stats */}
       <div className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-2.5 flex items-center justify-between text-sm">
         <div className="flex items-center gap-3">

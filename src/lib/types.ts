@@ -104,6 +104,7 @@ export interface PredictionsData {
   generated_at: string;
   region: string;
   total_trails: number;
+  summary?: Record<TrailCondition, number>;
   trails: TrailPrediction[];
 }
 
