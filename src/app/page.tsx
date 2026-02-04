@@ -49,27 +49,39 @@ export default function HomePage() {
   // UI state
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
   // Load predictions
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const response = await fetch('/data/predictions.json');
-        if (!response.ok) {
-          throw new Error('Failed to load predictions');
-        }
-        const data = await response.json();
-        setPredictions(data);
-      } catch (err) {
-        console.error('Error loading predictions:', err);
-        setError('Unable to load trail data. Please try again later.');
-      } finally {
-        setLoading(false);
+  async function loadData() {
+    try {
+      const response = await fetch(`/data/predictions.json?t=${Date.now()}`, {
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to load predictions');
       }
+      const data = await response.json();
+      setPredictions(data);
+      setLastFetched(new Date());
+    } catch (err) {
+      console.error('Error loading predictions:', err);
+      setError('Unable to load trail data. Please try again later.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    
+  }
+
+  useEffect(() => {
     loadData();
   }, []);
+
+  // Manual refresh handler
+  function handleRefresh() {
+    setRefreshing(true);
+    loadData();
+  }
 
   if (loading) {
     return (
@@ -124,10 +136,20 @@ export default function HomePage() {
       {/* Top bar with stats */}
       <div className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-2.5 flex items-center justify-between text-sm">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-[var(--foreground-muted)]">
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>{formatTimeSince(predictions.generated_at)}</span>
-          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-50"
+            title="Refresh predictions"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>
+              {lastFetched 
+                ? `Fetched ${formatTimeSince(lastFetched.toISOString())}`
+                : `Synced ${formatTimeSince(predictions.generated_at)}`
+              }
+            </span>
+          </button>
           <span className="hidden sm:inline h-4 w-px bg-[var(--border)]" />
           <div className="hidden sm:flex items-center gap-1.5">
             <CheckCircle className="w-3.5 h-3.5 text-green-500" />

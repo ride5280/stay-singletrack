@@ -181,7 +181,7 @@ function TrailPopup({ trail }: { trail: TrailPrediction }) {
       
       <Link
         href={`/trail/${trail.id}`}
-        className="mt-4 flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+        className="trail-popup-btn mt-4 flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-medium transition-colors"
       >
         View Details
         <ArrowRight className="w-4 h-4" />

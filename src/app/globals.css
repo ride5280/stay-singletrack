@@ -74,18 +74,51 @@ body {
 
 /* Override Leaflet popup styles for both themes */
 .leaflet-popup-content-wrapper {
-  background: var(--surface);
-  color: var(--foreground);
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
   border-radius: 12px;
   box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
 .dark .leaflet-popup-content-wrapper {
+  background: var(--surface-elevated) !important;
   box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.3);
 }
 
 .leaflet-popup-tip {
-  background: var(--surface);
+  background: var(--surface) !important;
+}
+
+.dark .leaflet-popup-tip {
+  background: var(--surface-elevated) !important;
+}
+
+/* Ensure popup content inherits proper text colors */
+.leaflet-popup-content {
+  color: var(--foreground) !important;
+}
+
+.leaflet-popup-content h3,
+.leaflet-popup-content strong {
+  color: var(--foreground) !important;
+}
+
+/* Style regular links in popups with accent color */
+.leaflet-popup-content a {
+  color: var(--accent);
+}
+
+/* Trail popup button - force white text on green background */
+.leaflet-popup-content a.trail-popup-btn,
+.leaflet-popup-content .trail-popup-btn {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  background-color: #22c55e !important;
+}
+
+.leaflet-popup-content a.trail-popup-btn:hover,
+.leaflet-popup-content .trail-popup-btn:hover {
+  background-color: #16a34a !important;
 }
 
 .leaflet-popup-close-button {
