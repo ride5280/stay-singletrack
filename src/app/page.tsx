@@ -52,10 +52,11 @@ export default function HomePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
-  // Load predictions
+  // Load predictions from API
   async function loadData() {
     try {
-      const response = await fetch(`/data/predictions.json?t=${Date.now()}`, {
+      // Fetch from Supabase-backed API
+      const response = await fetch(`/api/predictions?limit=10000&t=${Date.now()}`, {
         cache: 'no-store',
       });
       if (!response.ok) {
@@ -66,6 +67,16 @@ export default function HomePage() {
       setLastFetched(new Date());
     } catch (err) {
       console.error('Error loading predictions:', err);
+      // Fallback to static JSON if API fails
+      try {
+        const fallback = await fetch(`/data/predictions.json?t=${Date.now()}`);
+        if (fallback.ok) {
+          const data = await fallback.json();
+          setPredictions(data);
+          setLastFetched(new Date());
+          return;
+        }
+      } catch {}
       setError('Unable to load trail data. Please try again later.');
     } finally {
       setLoading(false);

@@ -15,8 +15,9 @@ import * as dotenv from 'dotenv';
 // Load environment variables
 dotenv.config({ path: '.env.local' });
 
-// Output path
+// Output path (keep for backup/debugging)
 const OUTPUT_FILE = path.join(__dirname, '../../public/data/predictions.json');
+const WRITE_TO_SUPABASE = true; // Toggle to write predictions to Supabase
 
 // Types
 type TrailCondition = 'rideable' | 'likely_rideable' | 'likely_muddy' | 'muddy' | 'snow' | 'unknown';
@@ -381,7 +382,40 @@ async function generatePredictions(): Promise<void> {
     trails: predictions,
   };
 
-  // Write to file
+  // Write to Supabase
+  if (WRITE_TO_SUPABASE) {
+    console.log('\nWriting to Supabase...');
+    
+    // Prepare predictions for upsert (without geometry - that stays in trails table)
+    const supabasePredictions = predictions.map(p => ({
+      trail_id: p.id,
+      cotrex_id: p.cotrex_id,
+      condition: p.condition,
+      confidence: p.confidence,
+      hours_since_rain: p.hours_since_rain,
+      effective_dry_hours: p.effective_dry_hours,
+      factors: p.factors,
+      predicted_at: new Date().toISOString(),
+    }));
+    
+    // Upsert in batches of 500
+    const batchSize = 500;
+    for (let i = 0; i < supabasePredictions.length; i += batchSize) {
+      const batch = supabasePredictions.slice(i, i + batchSize);
+      const { error: upsertError } = await supabase
+        .from('trail_predictions')
+        .upsert(batch, { onConflict: 'cotrex_id' });
+      
+      if (upsertError) {
+        console.error(`Error upserting batch ${i / batchSize + 1}:`, upsertError.message);
+      } else {
+        console.log(`  Batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(supabasePredictions.length / batchSize)} uploaded`);
+      }
+    }
+    console.log('✅ Supabase updated');
+  }
+
+  // Also write to file (backup, can be removed later)
   const outputDir = path.dirname(OUTPUT_FILE);
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
