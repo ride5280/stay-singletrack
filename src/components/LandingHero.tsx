@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle, MapPin, Clock, TreePine, ArrowRight } from 'lucide-react';
+import { CheckCircle, MapPin, Clock, TreePine, ArrowRight, Mail } from 'lucide-react';
 
 interface LandingHeroProps {
   onExplore: () => void;
@@ -152,12 +152,33 @@ export function LandingHero({ onExplore, stats }: LandingHeroProps) {
               <div>
                 <h3 className="font-semibold text-stone-800 dark:text-stone-100 mb-1">Help Us Improve</h3>
                 <p className="text-sm text-stone-600 dark:text-stone-300 mb-2">
-                  Predictions get better with your feedback. See something wrong? Report it.
+                  Predictions get better with your feedback. See something wrong? 
+                  Click any trail and use the <strong>Report Condition</strong> button on the trail details page.
                 </p>
                 <p className="text-xs text-stone-500 dark:text-stone-400">
                   <strong>Why "Stay Singletrack"?</strong> Using muddy trails causes erosion and widens paths. 
                   Check conditions. Go when it's dry. Keep singletrack single.
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-12 pt-8 border-t border-stone-200 dark:border-stone-700">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
+              <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
+                <TreePine className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <span>© {new Date().getFullYear()} Stay Singletrack</span>
+              </div>
+              <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
+                <span>Want to build together or use the data?</span>
+                <a
+                  href="mailto:hello@staysingletrack.com"
+                  className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  hello@staysingletrack.com
+                </a>
               </div>
             </div>
           </div>
