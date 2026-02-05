@@ -273,7 +273,7 @@ export default function HomePage() {
           {viewMode === 'map' && (
             <button
               onClick={() => setShowFilters(true)}
-              className="lg:hidden absolute bottom-6 right-4 z-[1000] flex items-center gap-2 px-4 py-3 rounded-full bg-green-500 hover:bg-green-600 text-white font-semibold shadow-lg transition-all active:scale-95"
+              className="lg:hidden absolute bottom-6 right-4 z-[400] flex items-center gap-2 px-4 py-3 rounded-full bg-green-500 hover:bg-green-600 text-white font-semibold shadow-lg transition-all active:scale-95 pointer-events-auto"
             >
               <Filter className="w-5 h-5" />
               <span>Filters</span>

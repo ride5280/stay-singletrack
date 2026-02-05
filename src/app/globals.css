@@ -72,6 +72,20 @@ body {
   transition: none !important;
 }
 
+/* Leaflet mobile touch fix */
+.leaflet-container {
+  touch-action: pan-x pan-y;
+}
+
+.leaflet-interactive {
+  cursor: pointer;
+}
+
+/* Ensure map paths are clickable on mobile */
+.leaflet-overlay-pane svg path {
+  pointer-events: auto;
+}
+
 /* Override Leaflet popup styles for both themes */
 /* Light mode popup styles */
 .leaflet-popup-content-wrapper {
