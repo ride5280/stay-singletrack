@@ -167,7 +167,7 @@ export function FilterControls({
 // Mobile-friendly modal version
 export function MobileFilterControls(props: FilterControlsProps & { onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 animate-fade-in">
+    <div className="fixed inset-0 z-[2000] animate-fade-in">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
