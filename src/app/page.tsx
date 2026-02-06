@@ -55,32 +55,62 @@ export default function HomePage() {
   const [showLanding, setShowLanding] = useState(true);
   const mapSectionRef = useRef<HTMLDivElement>(null);
 
-  // Load predictions from API
+  // Load predictions from static JSON (faster and has all trails)
+  // Falls back to API if static file unavailable
   async function loadData() {
     try {
-      // Fetch from Supabase-backed API
-      const response = await fetch(`/api/predictions?limit=10000&t=${Date.now()}`, {
+      // Prefer static JSON - it's pre-generated with all trails and faster
+      const response = await fetch(`/data/predictions.json?t=${Date.now()}`, {
         cache: 'no-store',
       });
       if (!response.ok) {
-        throw new Error('Failed to load predictions');
+        throw new Error('Static file not available');
       }
       const data = await response.json();
       setPredictions(data);
       setLastFetched(new Date());
     } catch (err) {
-      console.error('Error loading predictions:', err);
-      // Fallback to static JSON if API fails
+      console.error('Static file failed, trying API:', err);
+      // Fallback to API with pagination to get all trails
       try {
-        const fallback = await fetch(`/data/predictions.json?t=${Date.now()}`);
-        if (fallback.ok) {
-          const data = await fallback.json();
-          setPredictions(data);
-          setLastFetched(new Date());
-          return;
+        const pageSize = 1000;
+        let allTrails: any[] = [];
+        let offset = 0;
+        let metadata: any = null;
+        
+        // Fetch pages until we have all trails
+        while (true) {
+          const response = await fetch(
+            `/api/predictions?limit=${pageSize}&offset=${offset}&t=${Date.now()}`,
+            { cache: 'no-store' }
+          );
+          if (!response.ok) throw new Error('API failed');
+          
+          const data = await response.json();
+          if (!metadata) metadata = data;
+          allTrails = allTrails.concat(data.trails);
+          
+          // If we got fewer than pageSize, we're done
+          if (data.trails.length < pageSize) break;
+          offset += pageSize;
         }
-      } catch {}
-      setError('Unable to load trail data. Please try again later.');
+        
+        // Rebuild summary from all trails
+        const summary = allTrails.reduce((acc: any, t: any) => {
+          acc[t.condition] = (acc[t.condition] || 0) + 1;
+          return acc;
+        }, {});
+        
+        setPredictions({
+          ...metadata,
+          trails: allTrails,
+          total_trails: allTrails.length,
+          summary,
+        });
+        setLastFetched(new Date());
+      } catch {
+        setError('Unable to load trail data. Please try again later.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

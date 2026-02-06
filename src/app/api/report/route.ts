@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         trail_id,
         condition,
         notes: notes || null,
-        email: email,
+        user_id: email,  // Store email in user_id field (schema uses user_id, not email)
         ip_hash: hashIP(ip),
         reported_at: new Date().toISOString(),
       });
