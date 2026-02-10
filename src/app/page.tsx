@@ -52,7 +52,13 @@ export default function HomePage() {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [refreshing, setRefreshing] = useState(false);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
-  const [showLanding, setShowLanding] = useState(true);
+  const [showLanding, setShowLanding] = useState(() => {
+    // If user already explored this session, skip landing
+    if (typeof window !== 'undefined') {
+      return !sessionStorage.getItem('stay_singletrack_explored');
+    }
+    return true;
+  });
   const mapSectionRef = useRef<HTMLDivElement>(null);
 
   // Load predictions from static JSON (faster and has all trails)
@@ -130,6 +136,9 @@ export default function HomePage() {
   // Handle explore click - scroll to map section
   const handleExplore = () => {
     setShowLanding(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('stay_singletrack_explored', '1');
+    }
     // Small delay to allow state update, then scroll
     setTimeout(() => {
       mapSectionRef.current?.scrollIntoView({ behavior: 'smooth' });

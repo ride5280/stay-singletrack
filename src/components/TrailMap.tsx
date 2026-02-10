@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { TrailPrediction, CONDITION_COLORS, CONDITION_LABELS, TrailCondition } from '@/lib/types';
 import { ConditionBadge } from './ConditionBadge';
 import { useTheme } from 'next-themes';
@@ -134,33 +134,53 @@ export function TrailMap({
         url={tileUrl}
       />
 
-      {/* Trail lines */}
+      {/* Trail lines with invisible tap targets for mobile */}
       {filteredTrails.map((trail) => (
-        <GeoJSON
-          key={trail.id}
-          data={trail.geometry as GeoJSON.Geometry}
-          style={() => getTrailStyle(trail.condition)}
-          eventHandlers={{
-            click: () => {
-              onTrailClick?.(trail);
-            },
-            mouseover: (e: any) => {
-              const layer = e.target;
-              layer.setStyle({
-                weight: 5,
-                opacity: 1,
-              });
-            },
-            mouseout: (e: any) => {
-              const layer = e.target;
-              layer.setStyle(getTrailStyle(trail.condition));
-            },
-          }}
-        >
-          <Popup>
-            <TrailPopup trail={trail} />
-          </Popup>
-        </GeoJSON>
+        <React.Fragment key={trail.id}>
+          {/* Invisible wide hit area for touch */}
+          <GeoJSON
+            data={trail.geometry as GeoJSON.Geometry}
+            style={() => ({
+              color: 'transparent',
+              weight: 20,
+              opacity: 0,
+            })}
+            eventHandlers={{
+              click: () => {
+                onTrailClick?.(trail);
+              },
+            }}
+          >
+            <Popup>
+              <TrailPopup trail={trail} />
+            </Popup>
+          </GeoJSON>
+          {/* Visible trail line */}
+          <GeoJSON
+            data={trail.geometry as GeoJSON.Geometry}
+            style={() => getTrailStyle(trail.condition)}
+            eventHandlers={{
+              click: () => {
+                onTrailClick?.(trail);
+              },
+              mouseover: (e: any) => {
+                const layer = e.target;
+                layer.setStyle({
+                  weight: 5,
+                  opacity: 1,
+                });
+              },
+              mouseout: (e: any) => {
+                const layer = e.target;
+                layer.setStyle(getTrailStyle(trail.condition));
+              },
+            }}
+          >
+            <Popup>
+              <TrailPopup trail={trail} />
+            </Popup>
+          </GeoJSON>
+        </React.Fragment>
       ))}
     </MapContainer>
   );
