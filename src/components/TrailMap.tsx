@@ -76,7 +76,29 @@ export function TrailMap({
     );
   }
 
-  const { MapContainer, TileLayer, GeoJSON, Popup } = MapComponents;
+  const { MapContainer, TileLayer, GeoJSON, Popup, useMap } = MapComponents;
+
+  // Component to fit map bounds to trail geometries
+  function FitBounds({ trails: boundsTrails }: { trails: TrailPrediction[] }) {
+    const map = useMap();
+    useEffect(() => {
+      if (boundsTrails.length === 0) return;
+      const L = require('leaflet');
+      const bounds = L.latLngBounds([]);
+      boundsTrails.forEach((t) => {
+        const geoLayer = L.geoJSON(t.geometry as GeoJSON.Geometry);
+        bounds.extend(geoLayer.getBounds());
+      });
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+      }
+    }, [map, boundsTrails]);
+    // Also invalidate size after mount (fixes mobile container sizing)
+    useEffect(() => {
+      setTimeout(() => map.invalidateSize(), 100);
+    }, [map]);
+    return null;
+  }
 
   // Filter trails by selected conditions
   const filteredTrails = selectedConditions
@@ -103,6 +125,9 @@ export function TrailMap({
       style={{ background: resolvedTheme === 'dark' ? '#1a1511' : '#fafaf9' }}
       ref={mapRef}
     >
+      {/* Fit bounds to trails */}
+      <FitBounds trails={filteredTrails} />
+
       {/* Map tiles that match theme */}
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
