@@ -237,7 +237,21 @@ function predictTrailCondition(
   // Determine condition
   let condition: TrailCondition;
   
-  if (avgTemp < 0) {
+  // Snow/ice detection:
+  // 1. Corrected temp below freezing → snow
+  // 2. High elevation (>9500ft/2900m) during winter months (Nov-Apr) 
+  //    with corrected temp below 5°C → likely snow-covered even without recent precip
+  // 3. Very high elevation (>11000ft/3350m) during winter → almost always snow
+  const month = new Date().getMonth(); // 0-indexed
+  const isWinterMonth = month >= 10 || month <= 3; // Nov-Apr
+  const trailElevFt = trailElevation * 3.28084;
+  
+  const isSnow = 
+    avgTemp < 0 ||
+    (isWinterMonth && trailElevFt > 11000) ||
+    (isWinterMonth && trailElevFt > 9500 && avgTemp < 5);
+  
+  if (isSnow) {
     condition = 'snow';
   } else if (hoursSinceRain > effectiveDryHours * 1.5) {
     condition = 'rideable';
