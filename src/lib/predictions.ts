@@ -88,6 +88,7 @@ export interface PredictionStats {
   likely_muddy: number;
   muddy: number;
   snow: number;
+  closed: number;
   unknown: number;
 }
 
@@ -99,6 +100,7 @@ export function calculateStats(predictions: TrailPrediction[]): PredictionStats 
     likely_muddy: 0,
     muddy: 0,
     snow: 0,
+    closed: 0,
     unknown: 0,
   };
 

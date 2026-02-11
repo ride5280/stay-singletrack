@@ -125,6 +125,21 @@ export default function TrailDetailPage({ params }: PageProps) {
         Back to map
       </Link>
 
+      {/* Closed banner */}
+      {trail.condition === 'closed' && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
+            <X className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <div className="font-semibold text-red-500">Seasonally Closed</div>
+            <div className="text-sm text-[var(--foreground-muted)]">
+              This trail is currently closed. Please respect closures to protect trail conditions.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Trail header */}
       <div className="card p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">

@@ -41,7 +41,7 @@ yarn-error.log*
 data/raw/
 
 # Intermediate enrichment files
-data/enriched/trails_with_soil.json
+data/enriched/
 data/enriched/*_progress.json
 
 # vercel
@@ -50,3 +50,5 @@ data/enriched/*_progress.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+public/data/predictions.json
+public/data/trail-geometries.json

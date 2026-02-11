@@ -47,6 +47,7 @@ interface TrailData {
   elevation_gain?: number | null;
   dominant_aspect?: string | null;
   elevation_profile?: Array<{ distance_mi: number; elevation_m: number }> | null;
+  access?: string | null;
 }
 
 interface TrailsData {
@@ -107,6 +108,7 @@ function transformForInsert(trail: TrailData) {
     length_miles: trail.length_miles ?? null,
     open_to_bikes: trail.open_to_bikes ?? true,
     base_dry_hours: trail.base_dry_hours ?? 48,
+    access: trail.access ?? null,
   };
 }
 
@@ -126,19 +128,19 @@ async function seedDatabase(): Promise<void> {
   const trails = rawData.trails;
   console.log(`Found ${trails.length} trails\n`);
 
-  // Filter for bike-accessible trails only (optional)
-  const bikeTrails = trails.filter((t) => t.open_to_bikes);
-  console.log(`Bike-accessible trails: ${bikeTrails.length}`);
+  // Seed ALL trails (not just bike-accessible)
+  const allTrails = trails;
+  console.log(`Total trails to seed: ${allTrails.length}`);
 
   // Upsert in batches
   let successCount = 0;
   let errorCount = 0;
   const errors: Array<{ cotrex_id: string; error: string }> = [];
 
-  const totalBatches = Math.ceil(bikeTrails.length / BATCH_SIZE);
+  const totalBatches = Math.ceil(allTrails.length / BATCH_SIZE);
   
-  for (let i = 0; i < bikeTrails.length; i += BATCH_SIZE) {
-    const batch = bikeTrails.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < allTrails.length; i += BATCH_SIZE) {
+    const batch = allTrails.slice(i, i + BATCH_SIZE);
     const batchNum = Math.floor(i / BATCH_SIZE) + 1;
     
     process.stdout.write(`Batch ${batchNum}/${totalBatches}: `);

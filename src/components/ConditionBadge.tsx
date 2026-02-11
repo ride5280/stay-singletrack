@@ -1,7 +1,7 @@
 'use client';
 
 import { TrailCondition, CONDITION_COLORS, CONDITION_LABELS } from '@/lib/types';
-import { Circle, CheckCircle, AlertCircle, XCircle, Snowflake, HelpCircle } from 'lucide-react';
+import { Circle, CheckCircle, AlertCircle, XCircle, Snowflake, HelpCircle, Ban } from 'lucide-react';
 
 interface ConditionBadgeProps {
   condition: TrailCondition;
@@ -16,6 +16,7 @@ const CONDITION_ICONS: Record<TrailCondition, React.ComponentType<{ className?: 
   likely_muddy: AlertCircle,
   muddy: XCircle,
   snow: Snowflake,
+  closed: Ban,
   unknown: HelpCircle,
 };
 

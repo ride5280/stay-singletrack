@@ -16,6 +16,7 @@ interface FilterControlsProps {
     likely_muddy: number;
     muddy: number;
     snow: number;
+    closed: number;
     unknown: number;
   };
 }
@@ -26,6 +27,7 @@ const CONDITIONS: TrailCondition[] = [
   'likely_muddy',
   'muddy',
   'snow',
+  'closed',
 ];
 
 export function FilterControls({

@@ -41,6 +41,8 @@ const OUT_FIELDS = [
   'max_elevat',
   'manager',
   'feature_id',
+  'access',
+  'seasonalit',
 ].join(',');
 
 interface RawFeature {
@@ -62,6 +64,8 @@ interface RawFeature {
     max_elevat?: number;
     manager?: string;
     feature_id?: string;
+    access?: string;
+    seasonalit?: string;
     [key: string]: unknown;
   };
 }
@@ -74,6 +78,7 @@ interface ProcessedTrail {
   surface: string | null;
   open_to: string | null;
   open_to_bikes: boolean;
+  access: string | null;
   length_miles: number | null;
   elevation_min_m: number | null;
   elevation_max_m: number | null;
@@ -95,7 +100,7 @@ interface Progress {
 // Fetch a batch of trail segments from the API
 async function fetchBatch(offset: number): Promise<{ features: RawFeature[]; exceededTransferLimit: boolean }> {
   const params = new URLSearchParams({
-    where: "bike='yes' AND type='Trail'",
+    where: "type='Trail'",
     outFields: OUT_FIELDS,
     returnGeometry: 'true',
     f: 'geojson',
@@ -143,6 +148,8 @@ function mergeSegments(rawFeatures: RawFeature[]): ProcessedTrail[] {
       system: string | null;
       manager: string | null;
       surfaces: Set<string>;
+      bikeAllowed: boolean;
+      access: string | null;
       totalLength: number;
       minElev: number;
       maxElev: number;
@@ -180,6 +187,8 @@ function mergeSegments(rawFeatures: RawFeature[]): ProcessedTrail[] {
         system: props.name_1 || props.name_2 || props.name_3 || null,
         manager: props.manager || null,
         surfaces: new Set(),
+        bikeAllowed: props.bike?.toLowerCase() === 'yes',
+        access: props.access || props.seasonalit || null,
         totalLength: 0,
         minElev: Infinity,
         maxElev: -Infinity,
@@ -191,8 +200,11 @@ function mergeSegments(rawFeatures: RawFeature[]): ProcessedTrail[] {
     }
 
     // Accumulate data
+    if (props.bike?.toLowerCase() === 'yes') group.bikeAllowed = true;
     if (props.surface) group.surfaces.add(props.surface);
     if (props.manager && !group.manager) group.manager = props.manager;
+    if (props.access && !group.access) group.access = props.access;
+    if (!group.access && props.seasonalit) group.access = props.seasonalit;
     if (props.length_mi_) group.totalLength += props.length_mi_;
     if (props.min_elevat != null && props.min_elevat < group.minElev)
       group.minElev = props.min_elevat;
@@ -259,8 +271,9 @@ function mergeSegments(rawFeatures: RawFeature[]): ProcessedTrail[] {
       system: group.system,
       manager: group.manager,
       surface: group.surfaces.size > 0 ? Array.from(group.surfaces).join(', ') : null,
-      open_to: 'bike',
-      open_to_bikes: true,
+      open_to: group.bikeAllowed ? 'bike' : null,
+      open_to_bikes: group.bikeAllowed,
+      access: group.access,
       length_miles: length,
       elevation_min_m: group.minElev === Infinity ? null : Math.round(group.minElev),
       elevation_max_m: group.maxElev === -Infinity ? null : Math.round(group.maxElev),

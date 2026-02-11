@@ -20,7 +20,7 @@ const OUTPUT_FILE = path.join(__dirname, '../../public/data/predictions.json');
 const WRITE_TO_SUPABASE = true; // Toggle to write predictions to Supabase
 
 // Types
-type TrailCondition = 'rideable' | 'likely_rideable' | 'likely_muddy' | 'muddy' | 'snow' | 'unknown';
+type TrailCondition = 'rideable' | 'likely_rideable' | 'likely_muddy' | 'muddy' | 'snow' | 'closed' | 'unknown';
 type Aspect = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
 type DrainageClass = 
   | 'Excessively drained'
@@ -41,6 +41,7 @@ interface Trail {
   dominant_aspect: Aspect | null;
   soil_drainage_class: DrainageClass | null;
   base_dry_hours: number | null;
+  access: string | null;
   geometry: object;
 }
 
@@ -95,6 +96,44 @@ const ASPECT_MODIFIERS: Record<Aspect, number> = {
 };
 
 const PRECIP_THRESHOLD_MM = 2.5; // Significant rain threshold
+
+// Check if a trail is seasonally closed based on the access field
+function isSeasonallyClosed(access: string | null, elevationMin: number | null): boolean {
+  if (!access || access.trim() === '') return false;
+  
+  const trimmed = access.trim().toLowerCase();
+  
+  // Explicitly closed
+  if (trimmed === 'no' || trimmed === 'authorized/permitted user only') return true;
+  
+  // Parse date ranges like "5/1-11/30", "05/01-09/30", "6/16-12/01"
+  const dateRangeMatch = access.match(/(\d{1,2})\/(\d{1,2})-(\d{1,2})\/(\d{1,2})/);
+  if (dateRangeMatch) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const openMonth = parseInt(dateRangeMatch[1]) - 1; // 0-indexed
+    const openDay = parseInt(dateRangeMatch[2]);
+    const closeMonth = parseInt(dateRangeMatch[3]) - 1;
+    const closeDay = parseInt(dateRangeMatch[4]);
+    
+    const openDate = new Date(year, openMonth, openDay);
+    const closeDate = new Date(year, closeMonth, closeDay);
+    
+    // If today is before open date or after close date, trail is closed
+    if (now < openDate || now > closeDate) return true;
+    return false;
+  }
+  
+  // "seasonally" without specific dates — use elevation + month heuristic
+  if (trimmed === 'seasonally') {
+    const month = new Date().getMonth(); // 0-indexed
+    const isWinter = month >= 10 || month <= 3; // Nov-Apr
+    const elevFt = (elevationMin || 0) * 3.28084;
+    if (isWinter && elevFt > 9500) return true;
+  }
+  
+  return false;
+}
 
 // Create Supabase client
 function createSupabaseClient() {
@@ -186,6 +225,11 @@ function predictTrailCondition(
   trail: Trail,
   weather: WeatherDay[]
 ): { condition: TrailCondition; confidence: number; hours_since_rain: number; effective_dry_hours: number } {
+  // Check seasonal closure first
+  if (isSeasonallyClosed(trail.access, trail.elevation_min)) {
+    return { condition: 'closed', confidence: 100, hours_since_rain: 0, effective_dry_hours: 0 };
+  }
+
   // Base dry time from soil
   const baseDryHours = trail.base_dry_hours || 
     (trail.soil_drainage_class ? BASE_DRY_HOURS[trail.soil_drainage_class] : 48);
@@ -292,7 +336,6 @@ async function generatePredictions(): Promise<void> {
     const { data: batch, error: batchError } = await supabase
       .from('trails')
       .select('*')
-      .eq('open_to_bikes', true)
       .range(offset, offset + pageSize - 1);
     
     if (batchError) {
@@ -354,6 +397,7 @@ async function generatePredictions(): Promise<void> {
     likely_muddy: 0,
     muddy: 0,
     snow: 0,
+    closed: 0,
     unknown: 0,
   };
 
@@ -450,6 +494,7 @@ async function generatePredictions(): Promise<void> {
         likely_muddy: '🟠',
         muddy: '🔴',
         snow: '❄️',
+        closed: '🚫',
         unknown: '⚪',
       }[condition] || '⚪';
       console.log(`  ${emoji} ${condition}: ${count} (${pct}%)`);

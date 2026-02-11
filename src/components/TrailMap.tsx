@@ -109,7 +109,8 @@ export function TrailMap({
   const getTrailStyle = (condition: TrailCondition) => ({
     color: CONDITION_COLORS[condition],
     weight: 3,
-    opacity: 0.8,
+    opacity: condition === 'closed' ? 0.5 : 0.8,
+    dashArray: condition === 'closed' ? '8, 8' : undefined,
   });
 
   // Choose map tiles based on theme
@@ -243,6 +244,7 @@ export function MapLegend() {
     { condition: 'likely_muddy', Icon: AlertCircle },
     { condition: 'muddy', Icon: XCircle },
     { condition: 'snow', Icon: Snowflake },
+    { condition: 'closed', Icon: AlertCircle },
   ];
   
   return (

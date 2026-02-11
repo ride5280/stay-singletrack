@@ -1,5 +1,5 @@
 // Trail condition types
-export type TrailCondition = 'rideable' | 'likely_rideable' | 'likely_muddy' | 'muddy' | 'snow' | 'unknown';
+export type TrailCondition = 'rideable' | 'likely_rideable' | 'likely_muddy' | 'muddy' | 'snow' | 'closed' | 'unknown';
 
 // Soil drainage classes from SSURGO
 export type DrainageClass = 
@@ -127,6 +127,7 @@ export const CONDITION_COLORS: Record<TrailCondition, string> = {
   likely_muddy: '#f97316',   // orange-500
   muddy: '#ef4444',          // red-500
   snow: '#60a5fa',           // blue-400
+  closed: '#9ca3af',         // gray-400
   unknown: '#6b7280',        // gray-500
 };
 
@@ -137,6 +138,7 @@ export const CONDITION_LABELS: Record<TrailCondition, string> = {
   likely_muddy: 'Likely Muddy',
   muddy: 'Muddy',
   snow: 'Snow/Ice',
+  closed: 'Seasonally Closed',
   unknown: 'Unknown',
 };
 
