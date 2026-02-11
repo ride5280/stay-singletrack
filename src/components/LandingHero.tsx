@@ -170,11 +170,11 @@ export function LandingHero({ onExplore, stats }: LandingHeroProps) {
               </div>
               <ThemeToggle />
               <a
-                href="mailto:hello@staysingletrack.com"
+                href="mailto:support@staysingletrack.com"
                 className="inline-flex items-center gap-1.5 text-stone-500 dark:text-stone-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
               >
                 <Mail className="w-4 h-4" />
-                hello@staysingletrack.com
+                support@staysingletrack.com
               </a>
             </div>
           </div>
