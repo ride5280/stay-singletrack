@@ -2,13 +2,15 @@
 
 import { TrailCondition, CONDITION_LABELS, CONDITION_COLORS } from '@/lib/types';
 import { REGIONS } from '@/lib/predictions';
-import { Check, X, Filter, ChevronDown } from 'lucide-react';
+import { Check, X, Filter, ChevronDown, Bike } from 'lucide-react';
 
 interface FilterControlsProps {
   selectedConditions: TrailCondition[];
   onConditionsChange: (conditions: TrailCondition[]) => void;
   selectedRegion: string | null;
   onRegionChange: (region: string | null) => void;
+  bikeOnly: boolean;
+  onBikeOnlyChange: (bikeOnly: boolean) => void;
   stats?: {
     total: number;
     rideable: number;
@@ -35,6 +37,8 @@ export function FilterControls({
   onConditionsChange,
   selectedRegion,
   onRegionChange,
+  bikeOnly,
+  onBikeOnlyChange,
   stats,
 }: FilterControlsProps) {
   const toggleCondition = (condition: TrailCondition) => {
@@ -55,6 +59,27 @@ export function FilterControls({
 
   return (
     <div className="space-y-5">
+      {/* Bike-friendly toggle */}
+      <div>
+        <button
+          onClick={() => onBikeOnlyChange(!bikeOnly)}
+          className={`
+            w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+            transition-all duration-150 border
+            ${bikeOnly
+              ? 'border-green-500/40 bg-green-500/10 text-green-500'
+              : 'border-[var(--border)] bg-[var(--background-secondary)] text-[var(--foreground-secondary)] hover:border-[var(--border-strong)]'
+            }
+          `}
+        >
+          <Bike className="w-5 h-5 flex-shrink-0" />
+          <span className="flex-1 text-left">Bike-Friendly Only</span>
+          <div className={`w-9 h-5 rounded-full transition-colors ${bikeOnly ? 'bg-green-500' : 'bg-[var(--border-strong)]'}`}>
+            <div className={`w-4 h-4 rounded-full bg-white mt-0.5 transition-transform ${bikeOnly ? 'translate-x-4.5 ml-[18px]' : 'ml-0.5'}`} />
+          </div>
+        </button>
+      </div>
+
       {/* Condition filters */}
       <div>
         <div className="flex items-center justify-between mb-3">

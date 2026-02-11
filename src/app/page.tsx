@@ -46,6 +46,7 @@ export default function HomePage() {
     'muddy',
   ]);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [bikeOnly, setBikeOnly] = useState(false);
   
   // UI state
   const [showFilters, setShowFilters] = useState(false);
@@ -204,6 +205,9 @@ export default function HomePage() {
   if (selectedRegion) {
     filteredTrails = filterByRegion(filteredTrails, selectedRegion);
   }
+  if (bikeOnly) {
+    filteredTrails = filteredTrails.filter((t) => t.open_to_bikes);
+  }
 
   const stats = calculateStats(predictions.trails);
   const filteredStats = calculateStats(filteredTrails);
@@ -286,6 +290,8 @@ export default function HomePage() {
             onConditionsChange={setSelectedConditions}
             selectedRegion={selectedRegion}
             onRegionChange={setSelectedRegion}
+            bikeOnly={bikeOnly}
+            onBikeOnlyChange={setBikeOnly}
             stats={stats}
           />
         </aside>
@@ -317,6 +323,8 @@ export default function HomePage() {
           onConditionsChange={setSelectedConditions}
           selectedRegion={selectedRegion}
           onRegionChange={setSelectedRegion}
+          bikeOnly={bikeOnly}
+          onBikeOnlyChange={setBikeOnly}
           stats={stats}
           onClose={() => setShowFilters(false)}
         />

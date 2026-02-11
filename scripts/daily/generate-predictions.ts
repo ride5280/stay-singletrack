@@ -17,7 +17,7 @@ dotenv.config({ path: '.env.local' });
 
 // Output path (keep for backup/debugging)
 const OUTPUT_FILE = path.join(__dirname, '../../public/data/predictions.json');
-const WRITE_TO_SUPABASE = true; // Toggle to write predictions to Supabase
+const WRITE_TO_SUPABASE = false; // Toggle to write predictions to Supabase
 
 // Types
 type TrailCondition = 'rideable' | 'likely_rideable' | 'likely_muddy' | 'muddy' | 'snow' | 'closed' | 'unknown';
@@ -42,6 +42,7 @@ interface Trail {
   soil_drainage_class: DrainageClass | null;
   base_dry_hours: number | null;
   access: string | null;
+  open_to_bikes: boolean;
   geometry: object;
 }
 
@@ -59,6 +60,7 @@ interface TrailPrediction {
   name: string;
   centroid_lat: number;
   centroid_lon: number;
+  open_to_bikes: boolean;
   condition: TrailCondition;
   confidence: number;
   hours_since_rain: number;
@@ -326,34 +328,44 @@ async function generatePredictions(): Promise<void> {
   const supabase = createSupabaseClient();
   console.log('Connected to Supabase\n');
 
-  // Fetch all trails
-  console.log('Fetching trails...');
-  // Fetch all trails (Supabase defaults to 1000 row limit, so paginate)
-  let allTrails: Trail[] = [];
-  let offset = 0;
-  const pageSize = 1000;
-  while (true) {
-    const { data: batch, error: batchError } = await supabase
-      .from('trails')
-      .select('*')
-      .range(offset, offset + pageSize - 1);
-    
-    if (batchError) {
-      console.error('Error fetching trails:', batchError.message);
-      process.exit(1);
+  // Load trails from local enriched file (much faster than paginating Supabase with geometry)
+  console.log('Loading trails from local data...');
+  const trailDataPaths = [
+    path.join(__dirname, '../../data/enriched/trails_complete.json'),
+    path.join(__dirname, '../../data/raw/cotrex_trails.json'),
+  ];
+  
+  let trailDataFile = '';
+  for (const p of trailDataPaths) {
+    if (fs.existsSync(p)) {
+      trailDataFile = p;
+      break;
     }
-    if (!batch || batch.length === 0) break;
-    allTrails = allTrails.concat(batch);
-    if (batch.length < pageSize) break;
-    offset += pageSize;
   }
-  const trails = allTrails;
-  const trailsError = null;
-
-  if (trailsError || !trails) {
-    console.error('Error fetching trails:', (trailsError as Error | null)?.message);
+  
+  if (!trailDataFile) {
+    console.error('No trail data file found! Run ETL first.');
     process.exit(1);
   }
+  
+  console.log(`Reading from: ${path.basename(trailDataFile)}`);
+  const rawTrailData = JSON.parse(fs.readFileSync(trailDataFile, 'utf-8'));
+  const trails: Trail[] = (rawTrailData.trails || []).map((t: any, idx: number) => ({
+    id: t.id || idx + 1,
+    cotrex_id: t.cotrex_id,
+    name: t.name,
+    centroid_lat: t.centroid_lat,
+    centroid_lon: t.centroid_lon,
+    elevation_min: t.elevation_min ?? t.elevation_min_m ?? null,
+    elevation_max: t.elevation_max ?? t.elevation_max_m ?? null,
+    dominant_aspect: t.dominant_aspect ?? null,
+    soil_drainage_class: t.soil_drainage_class ?? null,
+    base_dry_hours: t.base_dry_hours ?? null,
+    access: t.access ?? null,
+    open_to_bikes: t.open_to_bikes ?? false,
+    geometry: t.geometry,
+  }));
+  
   console.log(`Loaded ${trails.length} trails\n`);
 
   // Fetch weather data (last 7 days for all regions)
@@ -361,21 +373,85 @@ async function generatePredictions(): Promise<void> {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   
-  const { data: weather, error: weatherError } = await supabase
-    .from('weather_cache')
-    .select('*')
-    .gte('date', sevenDaysAgo.toISOString().split('T')[0])
-    .order('date', { ascending: false });
+  let weather: any[] | null = null;
+  
+  // Try Supabase first
+  try {
+    const { data, error: weatherError } = await supabase
+      .from('weather_cache')
+      .select('*')
+      .gte('date', sevenDaysAgo.toISOString().split('T')[0])
+      .order('date', { ascending: false });
+    
+    if (!weatherError && data && data.length > 0) {
+      weather = data;
+      console.log(`Loaded ${weather.length} weather records from Supabase\n`);
+    } else {
+      console.log(`Supabase weather unavailable: ${weatherError?.message || 'no data'}`);
+    }
+  } catch (e) {
+    console.log(`Supabase weather fetch failed: ${(e as Error).message}`);
+  }
+  
+  // Fallback: fetch directly from Open-Meteo
+  if (!weather || weather.length === 0) {
+    console.log('Falling back to Open-Meteo API...');
+    const regions: Record<string, { lat: number; lon: number }> = {
+      front_range: { lat: 39.75, lon: -105.2 },
+      boulder: { lat: 40.015, lon: -105.27 },
+      golden: { lat: 39.75, lon: -105.22 },
+      denver: { lat: 39.74, lon: -104.99 },
+      colorado_springs: { lat: 38.83, lon: -104.82 },
+      fort_collins: { lat: 40.58, lon: -105.08 },
+      summit_county: { lat: 39.6, lon: -106.0 },
+      leadville: { lat: 39.25, lon: -106.29 },
+      aspen: { lat: 39.19, lon: -106.82 },
+      durango: { lat: 37.28, lon: -107.88 },
+      steamboat: { lat: 40.48, lon: -106.83 },
+      gunnison: { lat: 38.55, lon: -106.93 },
+      telluride: { lat: 37.94, lon: -107.81 },
+    };
+    
+    weather = [];
+    const startDate = sevenDaysAgo.toISOString().split('T')[0];
+    const endDate = new Date().toISOString().split('T')[0];
+    
+    for (const [regionId, coords] of Object.entries(regions)) {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean&past_days=7&forecast_days=0&timezone=America/Denver`;
+        const resp = await fetch(url);
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        const daily = data.daily;
+        if (!daily) continue;
+        
+        for (let i = 0; i < daily.time.length; i++) {
+          weather.push({
+            region: regionId,
+            date: daily.time[i],
+            precipitation_mm: daily.precipitation_sum?.[i] || 0,
+            temp_max_c: daily.temperature_2m_max?.[i] || 15,
+            temp_min_c: daily.temperature_2m_min?.[i] || 0,
+            humidity_pct: daily.relative_humidity_2m_mean?.[i] || 50,
+          });
+        }
+        // Small delay to not hammer the API
+        await new Promise(r => setTimeout(r, 200));
+      } catch (e) {
+        console.error(`  Failed to fetch weather for ${regionId}: ${(e as Error).message}`);
+      }
+    }
+    console.log(`Loaded ${weather.length} weather records from Open-Meteo\n`);
+  }
 
-  if (weatherError) {
-    console.error('Error fetching weather:', weatherError.message);
+  if (!weather || weather.length === 0) {
+    console.error('No weather data available from any source');
     process.exit(1);
   }
-  console.log(`Loaded ${weather?.length || 0} weather records\n`);
 
   // Group weather by region
   const weatherByRegion: Record<string, WeatherDay[]> = {};
-  for (const w of weather || []) {
+  for (const w of weather) {
     if (!weatherByRegion[w.region]) {
       weatherByRegion[w.region] = [];
     }
@@ -413,6 +489,7 @@ async function generatePredictions(): Promise<void> {
       name: trail.name,
       centroid_lat: trail.centroid_lat,
       centroid_lon: trail.centroid_lon,
+      open_to_bikes: trail.open_to_bikes ?? false,
       condition: prediction.condition,
       confidence: prediction.confidence,
       hours_since_rain: prediction.hours_since_rain,

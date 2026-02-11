@@ -85,6 +85,7 @@ export interface TrailPrediction {
   name: string;
   centroid_lat: number;
   centroid_lon: number;
+  open_to_bikes?: boolean;
   condition: TrailCondition;
   confidence: number;
   hours_since_rain: number;
