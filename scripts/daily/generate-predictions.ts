@@ -550,12 +550,57 @@ async function generatePredictions(): Promise<void> {
     console.log('✅ Supabase updated');
   }
 
-  // Also write to file (backup, can be removed later)
+  // Write split files for two-phase loading
   const outputDir = path.dirname(OUTPUT_FILE);
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
-  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(output, null, 2));
+  
+  // Full file (kept for backward compat / fallback)
+  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(output));
+  
+  // Lightweight index (no geometry) — fast initial load
+  const indexOutput = {
+    ...output,
+    trails: predictions.map(({ geometry, ...rest }) => rest),
+  };
+  fs.writeFileSync(path.join(outputDir, 'predictions-index.json'), JSON.stringify(indexOutput));
+  
+  // Simplified geometry file — loaded in background
+  const simplifyLine = (coords: number[][]): number[][] => {
+    if (coords.length <= 2) return coords;
+    const result = [coords[0]];
+    for (let i = 1; i < coords.length - 1; i++) {
+      const dx = coords[i][0] - result[result.length - 1][0];
+      const dy = coords[i][1] - result[result.length - 1][1];
+      if (Math.sqrt(dx * dx + dy * dy) > 0.001) {
+        result.push(coords[i]);
+      }
+    }
+    result.push(coords[coords.length - 1]);
+    return result;
+  };
+  
+  const geometries: Record<string, object> = {};
+  for (const p of predictions) {
+    if (p.geometry) {
+      const geom = p.geometry as any;
+      if (geom.type === 'MultiLineString') {
+        geometries[p.cotrex_id] = {
+          type: 'MultiLineString',
+          coordinates: geom.coordinates.map((line: number[][]) => simplifyLine(line)),
+        };
+      } else if (geom.type === 'LineString') {
+        geometries[p.cotrex_id] = {
+          type: 'LineString',
+          coordinates: simplifyLine(geom.coordinates),
+        };
+      } else {
+        geometries[p.cotrex_id] = geom;
+      }
+    }
+  }
+  fs.writeFileSync(path.join(outputDir, 'trail-geometries.json'), JSON.stringify(geometries));
 
   console.log('\n=======================');
   console.log('✅ Predictions generated!');

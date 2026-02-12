@@ -49,13 +49,27 @@ export default function TrailDetailPage({ params }: PageProps) {
   useEffect(() => {
     async function loadTrail() {
       try {
-        const response = await fetch('/data/predictions.json');
+        // Load from lightweight index first
+        const response = await fetch('/data/predictions-index.json');
         if (!response.ok) throw new Error('Failed to load');
         
         const data = await response.json();
         const found = data.trails.find(
           (t: TrailPrediction) => t.id.toString() === id
         );
+        
+        if (found) {
+          // Load geometry for this trail
+          try {
+            const geoResponse = await fetch('/data/trail-geometries.json');
+            if (geoResponse.ok) {
+              const geometries = await geoResponse.json();
+              found.geometry = geometries[found.cotrex_id] || null;
+            }
+          } catch {
+            // Geometry load failed — map just won't show
+          }
+        }
         
         setTrail(found || null);
       } catch (error) {

@@ -62,59 +62,57 @@ export default function HomePage() {
   });
   const mapSectionRef = useRef<HTMLDivElement>(null);
 
-  // Load predictions from static JSON (faster and has all trails)
-  // Falls back to API if static file unavailable
+  // Two-phase loading: fast index first (3.9MB), then geometry (12MB)
+  const [geometryLoaded, setGeometryLoaded] = useState(false);
+  
   async function loadData() {
     try {
-      // Prefer static JSON - it's pre-generated with all trails and faster
-      const response = await fetch(`/data/predictions.json?t=${Date.now()}`, {
+      // Phase 1: Load lightweight predictions index (no geometry)
+      const indexResponse = await fetch(`/data/predictions-index.json?t=${Date.now()}`, {
         cache: 'no-store',
       });
-      if (!response.ok) {
-        throw new Error('Static file not available');
+      if (!indexResponse.ok) {
+        throw new Error('Index file not available');
       }
-      const data = await response.json();
-      setPredictions(data);
+      const indexData = await indexResponse.json();
+      setPredictions(indexData);
       setLastFetched(new Date());
-    } catch (err) {
-      console.error('Static file failed, trying API:', err);
-      // Fallback to API with pagination to get all trails
+      setLoading(false);
+      
+      // Phase 2: Load geometry in background
       try {
-        const pageSize = 1000;
-        let allTrails: any[] = [];
-        let offset = 0;
-        let metadata: any = null;
-        
-        // Fetch pages until we have all trails
-        while (true) {
-          const response = await fetch(
-            `/api/predictions?limit=${pageSize}&offset=${offset}&t=${Date.now()}`,
-            { cache: 'no-store' }
-          );
-          if (!response.ok) throw new Error('API failed');
-          
-          const data = await response.json();
-          if (!metadata) metadata = data;
-          allTrails = allTrails.concat(data.trails);
-          
-          // If we got fewer than pageSize, we're done
-          if (data.trails.length < pageSize) break;
-          offset += pageSize;
-        }
-        
-        // Rebuild summary from all trails
-        const summary = allTrails.reduce((acc: any, t: any) => {
-          acc[t.condition] = (acc[t.condition] || 0) + 1;
-          return acc;
-        }, {});
-        
-        setPredictions({
-          ...metadata,
-          trails: allTrails,
-          total_trails: allTrails.length,
-          summary,
+        const geoResponse = await fetch(`/data/trail-geometries.json?t=${Date.now()}`, {
+          cache: 'no-store',
         });
+        if (geoResponse.ok) {
+          const geometries = await geoResponse.json();
+          // Merge geometry into predictions
+          setPredictions((prev) => {
+            if (!prev) return prev;
+            const updatedTrails = prev.trails.map((trail) => ({
+              ...trail,
+              geometry: geometries[trail.cotrex_id] || trail.geometry,
+            }));
+            return { ...prev, trails: updatedTrails };
+          });
+          setGeometryLoaded(true);
+        }
+      } catch (geoErr) {
+        console.error('Geometry load failed:', geoErr);
+        // Map will just be empty — list still works
+      }
+    } catch (err) {
+      console.error('Index file failed, trying full predictions:', err);
+      try {
+        // Fallback: try the full predictions.json
+        const response = await fetch(`/data/predictions.json?t=${Date.now()}`, {
+          cache: 'no-store',
+        });
+        if (!response.ok) throw new Error('Full file also unavailable');
+        const data = await response.json();
+        setPredictions(data);
         setLastFetched(new Date());
+        setGeometryLoaded(true);
       } catch {
         setError('Unable to load trail data. Please try again later.');
       }

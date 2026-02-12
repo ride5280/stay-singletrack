@@ -51,4 +51,3 @@ data/enriched/*_progress.json
 *.tsbuildinfo
 next-env.d.ts
 public/data/predictions.json
-public/data/trail-geometries.json
