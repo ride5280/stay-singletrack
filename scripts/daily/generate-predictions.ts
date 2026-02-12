@@ -17,7 +17,7 @@ dotenv.config({ path: '.env.local' });
 
 // Output path (keep for backup/debugging)
 const OUTPUT_FILE = path.join(__dirname, '../../public/data/predictions.json');
-const WRITE_TO_SUPABASE = false; // Toggle to write predictions to Supabase
+const WRITE_TO_SUPABASE = true; // Toggle to write predictions to Supabase
 
 // Types
 type TrailCondition = 'rideable' | 'likely_rideable' | 'likely_muddy' | 'muddy' | 'snow' | 'closed' | 'unknown';
