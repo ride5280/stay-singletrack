@@ -42,23 +42,20 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Check for changes
-        id: changes
-        run: |
-          if git diff --quiet public/data/predictions.json; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Commit and push predictions
-        if: steps.changes.outputs.changed == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add public/data/predictions.json
-          git commit -m "Update trail predictions $(date -u +%Y-%m-%d)"
-          git push
+          # Force-add even if gitignored (predictions.json is gitignored for local dev)
+          git add -f public/data/predictions.json
+          git add public/data/predictions-index.json
+          git add public/data/trail-geometries.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update trail predictions $(date -u +%Y-%m-%d)"
+            git push
+          fi
 
       - name: Summary
         run: |

@@ -328,8 +328,9 @@ async function generatePredictions(): Promise<void> {
   const supabase = createSupabaseClient();
   console.log('Connected to Supabase\n');
 
-  // Load trails from local enriched file (much faster than paginating Supabase with geometry)
-  console.log('Loading trails from local data...');
+  // Load trails: prefer local files (fast), fall back to Supabase (for CI/GitHub Actions)
+  let trails: Trail[] = [];
+  
   const trailDataPaths = [
     path.join(__dirname, '../../data/enriched/trails_complete.json'),
     path.join(__dirname, '../../data/raw/cotrex_trails.json'),
@@ -343,28 +344,65 @@ async function generatePredictions(): Promise<void> {
     }
   }
   
-  if (!trailDataFile) {
-    console.error('No trail data file found! Run ETL first.');
-    process.exit(1);
+  if (trailDataFile) {
+    console.log(`Loading trails from local file: ${path.basename(trailDataFile)}`);
+    const rawTrailData = JSON.parse(fs.readFileSync(trailDataFile, 'utf-8'));
+    trails = (rawTrailData.trails || []).map((t: any, idx: number) => ({
+      id: t.id || idx + 1,
+      cotrex_id: t.cotrex_id,
+      name: t.name,
+      centroid_lat: t.centroid_lat,
+      centroid_lon: t.centroid_lon,
+      elevation_min: t.elevation_min ?? t.elevation_min_m ?? null,
+      elevation_max: t.elevation_max ?? t.elevation_max_m ?? null,
+      dominant_aspect: t.dominant_aspect ?? null,
+      soil_drainage_class: t.soil_drainage_class ?? null,
+      base_dry_hours: t.base_dry_hours ?? null,
+      access: t.access ?? null,
+      open_to_bikes: t.open_to_bikes ?? false,
+      geometry: t.geometry,
+    }));
+  } else {
+    console.log('No local data files found, fetching from Supabase...');
+    const pageSize = 1000;
+    let offset = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('trails')
+        .select('*')
+        .range(offset, offset + pageSize - 1);
+      
+      if (error) {
+        console.error(`Supabase fetch error at offset ${offset}:`, error.message);
+        break;
+      }
+      if (!data || data.length === 0) break;
+      
+      trails.push(...data.map((t: any) => ({
+        id: t.id,
+        cotrex_id: t.cotrex_id,
+        name: t.name,
+        centroid_lat: t.centroid_lat,
+        centroid_lon: t.centroid_lon,
+        elevation_min: t.elevation_min ?? null,
+        elevation_max: t.elevation_max ?? null,
+        dominant_aspect: t.dominant_aspect ?? null,
+        soil_drainage_class: t.soil_drainage_class ?? null,
+        base_dry_hours: t.base_dry_hours ?? null,
+        access: t.access ?? null,
+        open_to_bikes: t.open_to_bikes ?? false,
+        geometry: t.geometry,
+      })));
+      
+      if (data.length < pageSize) break;
+      offset += pageSize;
+    }
   }
   
-  console.log(`Reading from: ${path.basename(trailDataFile)}`);
-  const rawTrailData = JSON.parse(fs.readFileSync(trailDataFile, 'utf-8'));
-  const trails: Trail[] = (rawTrailData.trails || []).map((t: any, idx: number) => ({
-    id: t.id || idx + 1,
-    cotrex_id: t.cotrex_id,
-    name: t.name,
-    centroid_lat: t.centroid_lat,
-    centroid_lon: t.centroid_lon,
-    elevation_min: t.elevation_min ?? t.elevation_min_m ?? null,
-    elevation_max: t.elevation_max ?? t.elevation_max_m ?? null,
-    dominant_aspect: t.dominant_aspect ?? null,
-    soil_drainage_class: t.soil_drainage_class ?? null,
-    base_dry_hours: t.base_dry_hours ?? null,
-    access: t.access ?? null,
-    open_to_bikes: t.open_to_bikes ?? false,
-    geometry: t.geometry,
-  }));
+  if (trails.length === 0) {
+    console.error('No trails loaded! Check local files or Supabase connection.');
+    process.exit(1);
+  }
   
   console.log(`Loaded ${trails.length} trails\n`);
 
