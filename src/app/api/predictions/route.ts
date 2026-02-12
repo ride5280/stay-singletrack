@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
   const conditions = searchParams.get('conditions')?.split(',') || null;
   const limit = parseInt(searchParams.get('limit') || '1000');
   const offset = parseInt(searchParams.get('offset') || '0');
+  const includeGeometry = searchParams.get('geometry') !== 'false';
+  const bikeOnly = searchParams.get('bikeOnly') === 'true';
   
   // Bounding box for map viewport (optional)
   const minLat = searchParams.get('minLat') ? parseFloat(searchParams.get('minLat')!) : null;
@@ -24,7 +26,11 @@ export async function GET(request: NextRequest) {
   const maxLon = searchParams.get('maxLon') ? parseFloat(searchParams.get('maxLon')!) : null;
   
   try {
-    // Build query joining predictions with trails (for geometry)
+    // Build query joining predictions with trails
+    const trailFields = includeGeometry
+      ? 'name, centroid_lat, centroid_lon, open_to_bikes, geometry'
+      : 'name, centroid_lat, centroid_lon, open_to_bikes';
+    
     let query = supabase
       .from('trail_predictions')
       .select(`
@@ -37,10 +43,7 @@ export async function GET(request: NextRequest) {
         factors,
         predicted_at,
         trails!inner (
-          name,
-          centroid_lat,
-          centroid_lon,
-          geometry
+          ${trailFields}
         )
       `)
       .range(offset, offset + limit - 1);
@@ -48,6 +51,11 @@ export async function GET(request: NextRequest) {
     // Filter by conditions
     if (conditions && conditions.length > 0) {
       query = query.in('condition', conditions);
+    }
+    
+    // Filter by bike-only
+    if (bikeOnly) {
+      query = query.eq('trails.open_to_bikes', true);
     }
     
     // Filter by bounding box if provided
@@ -86,12 +94,13 @@ export async function GET(request: NextRequest) {
       name: p.trails.name,
       centroid_lat: p.trails.centroid_lat,
       centroid_lon: p.trails.centroid_lon,
+      open_to_bikes: p.trails.open_to_bikes ?? false,
       condition: p.condition,
       confidence: p.confidence,
       hours_since_rain: p.hours_since_rain,
       effective_dry_hours: p.effective_dry_hours,
       factors: p.factors,
-      geometry: p.trails.geometry,
+      ...(includeGeometry && p.trails.geometry ? { geometry: p.trails.geometry } : {}),
     }));
     
     // Build summary from returned data
