@@ -27,6 +27,7 @@ export function TrailMap({
     MapContainer: React.ComponentType<any>;
     TileLayer: React.ComponentType<any>;
     GeoJSON: React.ComponentType<any>;
+    CircleMarker: React.ComponentType<any>;
     Popup: React.ComponentType<any>;
     useMap: () => any;
   } | null>(null);
@@ -38,7 +39,7 @@ export function TrailMap({
     const loadLeaflet = async () => {
       // Import Leaflet and react-leaflet
       const L = (await import('leaflet')).default;
-      const { MapContainer, TileLayer, GeoJSON, Popup, useMap } = await import('react-leaflet');
+      const { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, useMap } = await import('react-leaflet');
       
       // Load CSS by adding link element
       if (!document.getElementById('leaflet-css')) {
@@ -58,7 +59,7 @@ export function TrailMap({
         shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
       });
 
-      setMapComponents({ MapContainer, TileLayer, GeoJSON, Popup, useMap });
+      setMapComponents({ MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, useMap });
       setMounted(true);
     };
 
@@ -76,9 +77,9 @@ export function TrailMap({
     );
   }
 
-  const { MapContainer, TileLayer, GeoJSON, Popup, useMap } = MapComponents;
+  const { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, useMap } = MapComponents;
 
-  // Component to fit map bounds to trail geometries
+  // Component to fit map bounds to trail geometries or centroids
   function FitBounds({ trails: boundsTrails }: { trails: TrailPrediction[] }) {
     const map = useMap();
     useEffect(() => {
@@ -86,8 +87,14 @@ export function TrailMap({
       const L = require('leaflet');
       const bounds = L.latLngBounds([]);
       boundsTrails.forEach((t) => {
-        const geoLayer = L.geoJSON(t.geometry as GeoJSON.Geometry);
-        bounds.extend(geoLayer.getBounds());
+        if (t.geometry) {
+          try {
+            const geoLayer = L.geoJSON(t.geometry as GeoJSON.Geometry);
+            bounds.extend(geoLayer.getBounds());
+          } catch { /* skip invalid geometry */ }
+        } else if (t.centroid_lat && t.centroid_lon) {
+          bounds.extend(L.latLng(t.centroid_lat, t.centroid_lon));
+        }
       });
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
@@ -138,49 +145,72 @@ export function TrailMap({
       {/* Trail lines with invisible tap targets for mobile */}
       {filteredTrails.map((trail) => (
         <React.Fragment key={trail.id}>
-          {/* Invisible wide hit area for touch */}
-          <GeoJSON
-            data={trail.geometry as GeoJSON.Geometry}
-            style={() => ({
-              color: 'transparent',
-              weight: 20,
-              opacity: 0,
-            })}
-            eventHandlers={{
-              click: () => {
-                onTrailClick?.(trail);
-              },
-            }}
-          >
-            <Popup>
-              <TrailPopup trail={trail} />
-            </Popup>
-          </GeoJSON>
-          {/* Visible trail line */}
-          <GeoJSON
-            data={trail.geometry as GeoJSON.Geometry}
-            style={() => getTrailStyle(trail.condition)}
-            eventHandlers={{
-              click: () => {
-                onTrailClick?.(trail);
-              },
-              mouseover: (e: any) => {
-                const layer = e.target;
-                layer.setStyle({
-                  weight: 5,
-                  opacity: 1,
-                });
-              },
-              mouseout: (e: any) => {
-                const layer = e.target;
-                layer.setStyle(getTrailStyle(trail.condition));
-              },
-            }}
-          >
-            <Popup>
-              <TrailPopup trail={trail} />
-            </Popup>
-          </GeoJSON>
+          {trail.geometry ? (
+            <>
+              {/* Invisible wide hit area for touch */}
+              <GeoJSON
+                data={trail.geometry as GeoJSON.Geometry}
+                style={() => ({
+                  color: 'transparent',
+                  weight: 20,
+                  opacity: 0,
+                })}
+                eventHandlers={{
+                  click: () => {
+                    onTrailClick?.(trail);
+                  },
+                }}
+              >
+                <Popup>
+                  <TrailPopup trail={trail} />
+                </Popup>
+              </GeoJSON>
+              {/* Visible trail line */}
+              <GeoJSON
+                data={trail.geometry as GeoJSON.Geometry}
+                style={() => getTrailStyle(trail.condition)}
+                eventHandlers={{
+                  click: () => {
+                    onTrailClick?.(trail);
+                  },
+                  mouseover: (e: any) => {
+                    const layer = e.target;
+                    layer.setStyle({
+                      weight: 5,
+                      opacity: 1,
+                    });
+                  },
+                  mouseout: (e: any) => {
+                    const layer = e.target;
+                    layer.setStyle(getTrailStyle(trail.condition));
+                  },
+                }}
+              >
+                <Popup>
+                  <TrailPopup trail={trail} />
+                </Popup>
+              </GeoJSON>
+            </>
+          ) : trail.centroid_lat && trail.centroid_lon ? (
+            /* Centroid dot fallback when geometry hasn't loaded yet */
+            <CircleMarker
+              center={[trail.centroid_lat, trail.centroid_lon]}
+              radius={5}
+              pathOptions={{
+                color: CONDITION_COLORS[trail.condition],
+                fillColor: CONDITION_COLORS[trail.condition],
+                fillOpacity: 0.7,
+                weight: 1,
+              }}
+              eventHandlers={{
+                click: () => onTrailClick?.(trail),
+              }}
+            >
+              <Popup>
+                <TrailPopup trail={trail} />
+              </Popup>
+            </CircleMarker>
+          ) : null}
         </React.Fragment>
       ))}
     </MapContainer>
