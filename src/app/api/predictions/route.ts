@@ -1,15 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase = supabaseUrl && supabaseKey
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
+  // If Supabase isn't configured, return 503 so the client falls back to static files
+  if (!supabase) {
+    return NextResponse.json(
+      { error: 'Database not configured. Using static data.' },
+      { status: 503 }
+    );
+  }
   const searchParams = request.nextUrl.searchParams;
   
   // Optional filters
