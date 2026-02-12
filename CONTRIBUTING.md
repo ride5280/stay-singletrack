@@ -45,17 +45,17 @@ cp .env.example .env.local
 
 ### What You Can Work On
 
+Everything! All code is open for contributions:
+
 - **Frontend** — UI components, map interactions, filters, mobile experience
 - **Styling** — Dark/light theme, responsive design
 - **Performance** — Load times, caching, virtualization
 - **Accessibility** — Screen readers, keyboard navigation
+- **ETL / Data Pipeline** — Improve how we fetch and enrich trail data
+- **Prediction Algorithm** — Better condition logic, new data sources
+- **Database Schema** — Propose migrations for new features
 
-### What Requires Maintainer Access
-
-- ETL scripts (data pipeline)
-- Prediction algorithm changes
-- Database schema changes
-- Deployment and infrastructure
+> **Note:** Running ETL scripts and database migrations against production requires Supabase credentials (maintainer-only). But you can freely edit these files and open PRs — maintainers will test and deploy.
 
 ### Submitting Changes
 
