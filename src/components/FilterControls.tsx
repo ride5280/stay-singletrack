@@ -74,8 +74,8 @@ export function FilterControls({
         >
           <Bike className="w-5 h-5 flex-shrink-0" />
           <span className="flex-1 text-left">Bike-Friendly Only</span>
-          <div className={`w-9 h-5 rounded-full transition-colors ${bikeOnly ? 'bg-green-500' : 'bg-[var(--border-strong)]'}`}>
-            <div className={`w-4 h-4 rounded-full bg-white mt-0.5 transition-transform ${bikeOnly ? 'translate-x-4.5 ml-[18px]' : 'ml-0.5'}`} />
+          <div className={`relative w-9 h-5 rounded-full flex-shrink-0 transition-colors ${bikeOnly ? 'bg-green-500' : 'bg-[var(--border-strong)]'}`}>
+            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all duration-200 ${bikeOnly ? 'left-[18px]' : 'left-0.5'}`} />
           </div>
         </button>
       </div>
