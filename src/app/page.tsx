@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { PredictionsData, TrailCondition } from '@/lib/types';
-import { calculateStats, filterByCondition, filterByRegion, formatTimeSince } from '@/lib/predictions';
+import { calculateStats, filterByCondition, filterByRegion, filterBySearch, formatTimeSince } from '@/lib/predictions';
 import { FilterControls, MobileFilterControls } from '@/components/FilterControls';
 import { VirtualizedTrailList } from '@/components/VirtualizedTrailList';
 import { LandingHero } from '@/components/LandingHero';
@@ -14,7 +14,8 @@ import {
   RefreshCw, 
   CheckCircle,
   Construction,
-  TreePine
+  TreePine,
+  Search
 } from 'lucide-react';
 
 // Dynamic import for the map (no SSR since Leaflet needs window)
@@ -47,7 +48,8 @@ export default function HomePage() {
   ]);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [bikeOnly, setBikeOnly] = useState(false);
-  
+  const [searchQuery, setSearchQuery] = useState('');
+
   // UI state
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
@@ -235,6 +237,9 @@ export default function HomePage() {
   if (bikeOnly) {
     filteredTrails = filteredTrails.filter((t) => t.open_to_bikes);
   }
+  if (searchQuery.trim()) {
+    filteredTrails = filterBySearch(filteredTrails, searchQuery);
+  }
 
   const stats = calculateStats(predictions.trails);
   const filteredStats = calculateStats(filteredTrails);
@@ -268,6 +273,23 @@ export default function HomePage() {
           <span className="hidden sm:inline text-[var(--foreground-muted)]">
             <span className="text-[var(--foreground)] font-medium">{predictions.total_trails}</span> total
           </span>
+        </div>
+
+        {/* Search by trail name */}
+        <div className="flex-1 max-w-xs mx-2 sm:mx-4">
+          <label className="sr-only" htmlFor="trail-search">Search trails by name</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--foreground-muted)]" />
+            <input
+              id="trail-search"
+              type="search"
+              placeholder="Search trails..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg bg-[var(--background-secondary)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500"
+              aria-label="Search trails by name"
+            />
+          </div>
         </div>
         
         <div className="flex items-center gap-2">

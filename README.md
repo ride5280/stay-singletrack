@@ -186,7 +186,7 @@ The workflow runs daily at 6am Mountain Time to update predictions.
 
 ```
 stay-singletrack/
-├── src/
+├── src/ 
 │   ├── app/                 # Next.js pages
 │   │   ├── page.tsx         # Map view
 │   │   ├── trail/[id]/      # Trail detail

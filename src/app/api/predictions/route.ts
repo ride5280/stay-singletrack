@@ -25,21 +25,84 @@ export async function GET(request: NextRequest) {
   const conditions = searchParams.get('conditions')?.split(',') || null;
   const limit = parseInt(searchParams.get('limit') || '1000');
   const offset = parseInt(searchParams.get('offset') || '0');
+<<<<<<< HEAD
   const includeGeometry = searchParams.get('geometry') !== 'false';
   const bikeOnly = searchParams.get('bikeOnly') === 'true';
   
+=======
+  const searchQuery = searchParams.get('q')?.trim() || searchParams.get('search')?.trim() || null;
+
+>>>>>>> source/add-search
   // Bounding box for map viewport (optional)
   const minLat = searchParams.get('minLat') ? parseFloat(searchParams.get('minLat')!) : null;
   const maxLat = searchParams.get('maxLat') ? parseFloat(searchParams.get('maxLat')!) : null;
   const minLon = searchParams.get('minLon') ? parseFloat(searchParams.get('minLon')!) : null;
   const maxLon = searchParams.get('maxLon') ? parseFloat(searchParams.get('maxLon')!) : null;
-  
+
   try {
+<<<<<<< HEAD
     // Build query joining predictions with trails
     const trailFields = includeGeometry
       ? 'name, centroid_lat, centroid_lon, open_to_bikes, geometry'
       : 'name, centroid_lat, centroid_lon, open_to_bikes';
     
+=======
+    // When search query is provided, use Postgres full-text search (RPC)
+    if (searchQuery) {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('search_predictions', {
+        search_query: searchQuery,
+        conditions_filter: conditions && conditions.length > 0 ? conditions : null,
+        min_lat: minLat,
+        max_lat: maxLat,
+        min_lon: minLon,
+        max_lon: maxLon,
+        lim: limit,
+        off: offset,
+      });
+
+      if (rpcError) {
+        console.error('Search RPC error:', rpcError);
+        return NextResponse.json({ error: rpcError.message }, { status: 500 });
+      }
+
+      const trails = (rpcData || []).map((row: any) => ({
+        id: row.id,
+        cotrex_id: row.cotrex_id,
+        name: row.name,
+        centroid_lat: row.centroid_lat,
+        centroid_lon: row.centroid_lon,
+        condition: row.condition,
+        confidence: row.confidence,
+        hours_since_rain: row.hours_since_rain,
+        effective_dry_hours: row.effective_dry_hours,
+        factors: row.factors,
+        geometry: row.geometry,
+      }));
+
+      const summary = trails.reduce((acc: any, t: any) => {
+        acc[t.condition] = (acc[t.condition] || 0) + 1;
+        return acc;
+      }, {});
+
+      const { data: meta } = await supabase
+        .from('trail_predictions')
+        .select('predicted_at')
+        .order('predicted_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      return NextResponse.json({
+        generated_at: meta?.predicted_at || new Date().toISOString(),
+        region: 'Colorado',
+        total_trails: trails.length,
+        summary,
+        trails,
+        pagination: { offset, limit, returned: trails.length },
+      });
+    }
+
+    // Build query joining predictions with trails (for geometry)
+>>>>>>> source/add-search
     let query = supabase
       .from('trail_predictions')
       .select(`

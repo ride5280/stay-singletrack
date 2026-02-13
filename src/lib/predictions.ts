@@ -80,6 +80,20 @@ export function filterByRegion(
   });
 }
 
+// Client-side search by trail name (substring match, all words must appear)
+export function filterBySearch(
+  predictions: TrailPrediction[],
+  query: string
+): TrailPrediction[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return predictions;
+  const words = q.split(/\s+/).filter(Boolean);
+  return predictions.filter((trail) => {
+    const name = (trail.name || '').toLowerCase();
+    return words.every((word) => name.includes(word));
+  });
+}
+
 // Calculate summary stats
 export interface PredictionStats {
   total: number;
