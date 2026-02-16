@@ -13,7 +13,8 @@
     "etl:seed": "tsx scripts/etl/seed-database.ts",
     "daily:weather": "tsx scripts/daily/fetch-weather.ts",
     "daily:predictions": "tsx scripts/daily/generate-predictions.ts",
-    "daily": "npm run daily:weather && npm run daily:predictions"
+    "daily": "npm run daily:weather && npm run daily:predictions",
+    "seed:local": "tsx scripts/local-seed.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.93.2",

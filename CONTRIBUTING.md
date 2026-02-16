@@ -4,7 +4,7 @@ Thanks for your interest in contributing! Here's how to get set up locally.
 
 ## Local Development (No Supabase Needed)
 
-The app ships with static data files so you can run everything locally without any database or API keys.
+The app runs fully offline with sample data. No database, no API keys, no environment variables.
 
 ### Quick Start
 
@@ -12,10 +12,30 @@ The app ships with static data files so you can run everything locally without a
 git clone https://github.com/ChacierW/stay-singletrack.git
 cd stay-singletrack
 npm install
+npm run seed:local   # Generate sample trail data
 npm run dev
 ```
 
-That's it. Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). You'll see 10 sample Colorado trails with realistic conditions.
+
+### Local Seed Script
+
+`npm run seed:local` generates sample data files in `public/data/`:
+
+| File | Contents |
+|------|----------|
+| `predictions.json` | Full predictions with geometry |
+| `predictions-index.json` | Predictions without geometry (fast initial load) |
+| `trail-geometries.json` | GeoJSON geometries keyed by cotrex_id |
+
+The sample data includes:
+- **10 real Colorado trail locations** (Marshall Mesa, Betasso, Apex, etc.)
+- **All condition types** — rideable, muddy, snow, closed
+- **Seasonal closures** — date-range and seasonal access restrictions
+- **Bike-friendly flags** — mix of bike and hike-only trails
+- **Realistic prediction factors** — soil drainage, aspect, elevation
+
+Re-run `npm run seed:local` anytime to regenerate fresh data.
 
 ### How It Works
 
@@ -25,14 +45,9 @@ The app loads trail data in two phases:
 
 Without Supabase env vars, the API returns a 503 and the frontend automatically falls back to the static JSON files. You get the full experience — map, filters, trail details — all from local data.
 
-### Static Data Files
+### Production Data
 
-| File | Size | Contents |
-|------|------|----------|
-| `public/data/predictions-index.json` | ~3.6 MB | Trail predictions without geometry |
-| `public/data/trail-geometries.json` | ~12 MB | GeoJSON geometries keyed by cotrex_id |
-
-These are checked into git and periodically updated by maintainers.
+In production, static files are much larger (~15 MB total, ~10,000 trails) and are updated daily by GitHub Actions. The local seed gives you a small representative dataset for development.
 
 ### Environment Variables
 
