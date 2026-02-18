@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS trail_predictions (
   cotrex_id TEXT NOT NULL,
   
   -- Prediction data
-  condition TEXT NOT NULL CHECK (condition IN ('rideable', 'likely_rideable', 'likely_muddy', 'muddy', 'snow')),
+  condition TEXT NOT NULL CHECK (condition IN ('rideable', 'likely_rideable', 'likely_muddy', 'muddy', 'snow', 'closed', 'unknown')),
   confidence INTEGER NOT NULL CHECK (confidence >= 0 AND confidence <= 100),
   hours_since_rain DECIMAL(6, 2),
   effective_dry_hours DECIMAL(6, 2),

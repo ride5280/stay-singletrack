@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
   const offset = parseInt(searchParams.get('offset') || '0');
   const includeGeometry = searchParams.get('geometry') !== 'false';
   const bikeOnly = searchParams.get('bikeOnly') === 'true';
+  const q = searchParams.get('q')?.trim() || null;
   
   // Bounding box for map viewport (optional)
   const minLat = searchParams.get('minLat') ? parseFloat(searchParams.get('minLat')!) : null;
@@ -74,6 +75,11 @@ export async function GET(request: NextRequest) {
         .lte('trails.centroid_lat', maxLat)
         .gte('trails.centroid_lon', minLon)
         .lte('trails.centroid_lon', maxLon);
+    }
+
+    // Search by trail name (Supabase ilike on joined trails table)
+    if (q) {
+      query = query.ilike('trails.name', `%${q}%`);
     }
     
     const { data, error, count } = await query;

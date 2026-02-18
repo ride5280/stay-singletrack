@@ -28,6 +28,18 @@ export function filterByCondition(
   return predictions.filter((trail) => conditions.includes(trail.condition));
 }
 
+// Filter predictions by search query (trail name, case-insensitive)
+export function filterBySearch(
+  predictions: TrailPrediction[],
+  query: string
+): TrailPrediction[] {
+  if (!query || !query.trim()) return predictions;
+  const term = query.trim().toLowerCase();
+  return predictions.filter(
+    (trail) => trail.name?.toLowerCase().includes(term)
+  );
+}
+
 // Get predictions filtered by region (based on lat/lon bounds)
 export interface RegionBounds {
   north: number;

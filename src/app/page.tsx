@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { PredictionsData, TrailCondition } from '@/lib/types';
-import { calculateStats, filterByCondition, filterByRegion, formatTimeSince } from '@/lib/predictions';
+import { calculateStats, filterByCondition, filterByRegion, filterBySearch, formatTimeSince } from '@/lib/predictions';
 import { FilterControls, MobileFilterControls } from '@/components/FilterControls';
 import { VirtualizedTrailList } from '@/components/VirtualizedTrailList';
 import { LandingHero } from '@/components/LandingHero';
@@ -14,7 +14,8 @@ import {
   RefreshCw, 
   CheckCircle,
   Construction,
-  TreePine
+  TreePine,
+  Search
 } from 'lucide-react';
 
 // Dynamic import for the map (no SSR since Leaflet needs window)
@@ -47,6 +48,7 @@ export default function HomePage() {
   ]);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [bikeOnly, setBikeOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // UI state
   const [showFilters, setShowFilters] = useState(false);
@@ -87,6 +89,9 @@ export default function HomePage() {
         offset += pageSize;
       }
       
+      // If API returned no trails (e.g. DB not seeded), fall back to static files
+      if (allTrails.length === 0) throw new Error('No trails from API');
+
       const summary = allTrails.reduce((acc: any, t: any) => {
         acc[t.condition] = (acc[t.condition] || 0) + 1;
         return acc;
@@ -235,6 +240,7 @@ export default function HomePage() {
   if (bikeOnly) {
     filteredTrails = filteredTrails.filter((t) => t.open_to_bikes);
   }
+  filteredTrails = filterBySearch(filteredTrails, searchQuery);
 
   const stats = calculateStats(predictions.trails);
   const filteredStats = calculateStats(filteredTrails);
@@ -242,8 +248,21 @@ export default function HomePage() {
   return (
     <div ref={mapSectionRef} className="h-[calc(100vh-60px)] flex flex-col bg-[var(--background)]">
       {/* Top bar with stats */}
-      <div className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-2.5 flex items-center justify-between text-sm">
-        <div className="flex items-center gap-3">
+      <div className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-2.5 flex items-center justify-between gap-3 text-sm flex-wrap">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {/* Search by trail name */}
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--foreground-muted)] pointer-events-none" />
+            <input
+              type="search"
+              placeholder="Search trails..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-[var(--background-secondary)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] focus:border-green-500 focus:ring-1 focus:ring-green-500 focus:outline-none text-sm"
+              aria-label="Search trails by name"
+            />
+          </div>
+          <span className="hidden sm:inline h-4 w-px bg-[var(--border)] flex-shrink-0" />
           <button
             onClick={handleRefresh}
             disabled={refreshing}

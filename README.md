@@ -84,13 +84,14 @@ For production or working on the data pipeline, you'll need a Supabase project (
    # Edit .env.local with your Supabase credentials
    ```
 
-2. **Set up database** — Run migrations in Supabase SQL Editor:
-   ```bash
-   # Run in order:
-   # supabase/migrations/001_initial_schema.sql
-   # supabase/migrations/002_add_access_column.sql
-   # supabase/migrations/002_trail_predictions.sql
-   ```
+2. **Set up database**
+   - **Local (Docker):** Migrations run automatically. Start Supabase, or reset to re-apply all:
+     ```bash
+     supabase start
+     # or, to reset and re-run all migrations:
+     supabase db reset
+     ```
+   - **Hosted (Supabase Cloud):** In the [SQL Editor](https://supabase.com/dashboard/project/_/sql), run each migration file in order: `001_initial_schema.sql` → `002_add_access_column.sql` → `004_trail_predictions.sql`.
 
 3. **Run ETL pipeline** (one-time setup)
    ```bash
@@ -111,6 +112,8 @@ For production or working on the data pipeline, you'll need a Supabase project (
    ```
 
    Open [http://localhost:3000](http://localhost:3000)
+
+   **Tip:** If you haven’t run the ETL pipeline yet, the app will show no data from the DB. Run `npm run seed:local` once to generate sample static data; the app will use it when the database is empty.
 
 ## 📊 Data Sources
 
@@ -146,6 +149,35 @@ Otherwise                                       → Muddy 🔴
 | Somewhat poorly drained | 72 hours |
 | Poorly drained | 120 hours |
 | Very poorly drained | 168 hours |
+
+## 🔍 Predictions API & search
+
+When Supabase is configured, the app fetches predictions from `GET /api/predictions`. The API supports server-side filtering so clients can request only the data they need (works with both local and hosted Supabase).
+
+### Query parameters
+
+| Parameter | Type | Description |
+|-----------|------|--------------|
+| `q` | string | Search by trail name (case-insensitive, substring match). |
+| `conditions` | string | Comma-separated condition filter, e.g. `rideable,likely_rideable`. |
+| `bikeOnly` | boolean | If `true`, only trails where `open_to_bikes` is true. |
+| `geometry` | boolean | Set to `false` to omit geometry (smaller payload; default is include). |
+| `limit` | number | Max rows per page (default `1000`). |
+| `offset` | number | Pagination offset (default `0`). |
+| `minLat`, `maxLat`, `minLon`, `maxLon` | number | Bounding box (trail centroid must fall inside). All four must be set together. |
+
+### Example
+
+```http
+GET /api/predictions?geometry=false&limit=500&offset=0&q=Betasso&conditions=rideable,likely_rideable&bikeOnly=true
+GET /api/predictions?minLat=39.5&maxLat=40.5&minLon=-106&maxLon=-105
+```
+
+### Response
+
+JSON with `generated_at`, `region`, `total_trails`, `summary` (counts by condition), `trails` (array of prediction objects), and `pagination` (`offset`, `limit`, `returned`).
+
+If Supabase is not configured, the API returns `503` and the frontend falls back to static files (`/data/predictions-index.json`, `/data/trail-geometries.json`).
 
 ## 🌐 Deployment
 
