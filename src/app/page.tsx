@@ -249,9 +249,9 @@ export default function HomePage() {
     <div ref={mapSectionRef} className="h-[calc(100vh-60px)] flex flex-col bg-[var(--background)]">
       {/* Top bar with stats */}
       <div className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-2.5 flex items-center justify-between gap-3 text-sm flex-wrap">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          {/* Search by trail name */}
-          <div className="relative flex-1 max-w-xs">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          {/* Search by trail name — constrained on mobile so filter/view toggles stay visible */}
+          <div className="relative flex-1 min-w-0 max-w-[140px] sm:max-w-[220px] md:max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--foreground-muted)] pointer-events-none" />
             <input
               type="search"
@@ -266,11 +266,11 @@ export default function HomePage() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-1.5 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-50 shrink-0"
             title="Refresh predictions"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>
+            <span className="hidden sm:inline">
               {lastFetched 
                 ? `Fetched ${formatTimeSince(lastFetched.toISOString())}`
                 : `Synced ${formatTimeSince(predictions.generated_at)}`
@@ -289,7 +289,7 @@ export default function HomePage() {
           </span>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* Mobile filter toggle */}
           <button
             onClick={() => setShowFilters(true)}
