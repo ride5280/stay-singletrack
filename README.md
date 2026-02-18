@@ -61,57 +61,51 @@ The app combines soil drainage rates with recent precipitation, temperature, and
 ### Prerequisites
 
 - Node.js 20+
-- A Supabase project (free tier works)
 
-### Setup
+### Quick Start (Local Dev)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/ChacierW/stay-singletrack.git
-   cd stay-singletrack
-   ```
+```bash
+git clone https://github.com/ChacierW/stay-singletrack.git
+cd stay-singletrack
+npm install
+npm run seed:local   # Generate sample trail data (no database needed)
+npm run dev
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+Open [http://localhost:3000](http://localhost:3000). See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-3. **Configure environment**
+### Full Setup (with Supabase)
+
+For production or working on the data pipeline, you'll need a Supabase project (free tier works):
+
+1. **Configure environment**
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your Supabase credentials
    ```
 
-4. **Set up database**
-   
-   Run the migration in Supabase SQL Editor:
+2. **Set up database** — Run migrations in Supabase SQL Editor:
    ```bash
-   cat supabase/migrations/001_initial_schema.sql
-   # Copy and paste into Supabase SQL Editor
+   # Run in order:
+   # supabase/migrations/001_initial_schema.sql
+   # supabase/migrations/002_add_access_column.sql
+   # supabase/migrations/002_trail_predictions.sql
    ```
 
-5. **Run ETL pipeline** (one-time setup)
+3. **Run ETL pipeline** (one-time setup)
    ```bash
-   # Fetch Colorado trail data from COTREX
-   npx tsx scripts/etl/fetch-cotrex.ts
-   
-   # Enrich with soil drainage data (takes a while - 1 req/sec)
-   npx tsx scripts/etl/enrich-soil.ts
-   
-   # Enrich with elevation/aspect data
-   npx tsx scripts/etl/enrich-elevation.ts
-   
-   # Seed the database
-   npx tsx scripts/etl/seed-database.ts
+   npm run etl:fetch      # Fetch Colorado trail data from COTREX
+   npm run etl:soil       # Enrich with soil drainage data (slow - 1 req/sec)
+   npm run etl:elevation  # Enrich with elevation/aspect data
+   npm run etl:seed       # Seed the database
    ```
 
-6. **Generate initial predictions**
+4. **Generate predictions**
    ```bash
-   npx tsx scripts/daily/fetch-weather.ts
-   npx tsx scripts/daily/generate-predictions.ts
+   npm run daily          # Fetch weather + generate predictions
    ```
 
-7. **Start the development server**
+5. **Start the development server**
    ```bash
    npm run dev
    ```
