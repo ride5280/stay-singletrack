@@ -100,6 +100,15 @@ export function TrailMap({
     loadLeaflet();
   }, []);
 
+  // Pre-compute which tiles actually have trails (avoid 404s for empty tiles)
+  const knownTiles = useMemo(() => {
+    const tiles = new Set<string>();
+    for (const trail of trails) {
+      tiles.add(getTileKey(trail.centroid_lat, trail.centroid_lon));
+    }
+    return tiles;
+  }, [trails]);
+
   if (!mounted || !MapComponents) {
     return (
       <div className="w-full h-full bg-[var(--background-secondary)] flex items-center justify-center">
@@ -140,15 +149,6 @@ export function TrailMap({
     }, [map]);
     return null;
   }
-
-  // Pre-compute which tiles actually have trails (avoid 404s for empty tiles)
-  const knownTiles = useMemo(() => {
-    const tiles = new Set<string>();
-    for (const trail of trails) {
-      tiles.add(getTileKey(trail.centroid_lat, trail.centroid_lon));
-    }
-    return tiles;
-  }, [trails]);
 
   // Component to load geometries based on viewport
   function ViewportGeometryLoader() {

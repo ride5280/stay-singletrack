@@ -68,90 +68,60 @@ export default function HomePage() {
   
   async function loadData() {
     try {
-      // Phase 1: Load predictions WITHOUT geometry from API (fast, paginated)
-      const pageSize = 1000;
-      let allTrails: any[] = [];
-      let offset = 0;
-      let metadata: any = null;
-      
-      while (true) {
-        const response = await fetch(
-          `/api/predictions?geometry=false&limit=${pageSize}&offset=${offset}`,
-          { cache: 'no-store' }
-        );
-        if (!response.ok) throw new Error('API failed');
-        
-        const data = await response.json();
-        if (!metadata) metadata = data;
-        allTrails = allTrails.concat(data.trails);
-        
-        if (data.trails.length < pageSize) break;
-        offset += pageSize;
-      }
-      
-      // If API returned no trails (e.g. DB not seeded), fall back to static files
-      if (allTrails.length === 0) throw new Error('No trails from API');
-
-      const summary = allTrails.reduce((acc: any, t: any) => {
-        acc[t.condition] = (acc[t.condition] || 0) + 1;
-        return acc;
-      }, {});
-      
-      setPredictions({
-        generated_at: metadata.generated_at,
-        region: metadata.region,
-        total_trails: allTrails.length,
-        summary,
-        trails: allTrails,
+      // Load predictions-index.json FIRST (static, CDN-cached, ~3.6MB for all 10K trails)
+      const indexResponse = await fetch(`/data/predictions-index.json`, {
+        cache: 'no-store'
       });
-      setLastFetched(new Date());
-      setLoading(false);
-      
-      // Phase 2: Load geometry in background from static file (simplified, 11MB)
-      try {
-        const geoResponse = await fetch(`/data/trail-geometries.json`, {
-          cache: 'no-store',
-        });
-        if (geoResponse.ok) {
-          const geometries = await geoResponse.json();
-          setPredictions((prev) => {
-            if (!prev) return prev;
-            const updatedTrails = prev.trails.map((trail) => ({
-              ...trail,
-              geometry: geometries[trail.cotrex_id] || trail.geometry,
-            }));
-            return { ...prev, trails: updatedTrails };
-          });
-          setGeometryLoaded(true);
-        }
-      } catch {
-        console.error('Geometry load failed — map will be empty');
-      }
-    } catch (err) {
-      console.error('API failed, trying static fallback:', err);
-      try {
-        // Fallback to static index + geometry
-        const indexResponse = await fetch(`/data/predictions-index.json`, { cache: 'no-store' });
-        if (!indexResponse.ok) throw new Error('Static also unavailable');
+
+      if (indexResponse.ok) {
         const indexData = await indexResponse.json();
         setPredictions(indexData);
         setLastFetched(new Date());
         setLoading(false);
-        
-        const geoResponse = await fetch(`/data/trail-geometries.json`, { cache: 'no-store' });
-        if (geoResponse.ok) {
-          const geometries = await geoResponse.json();
-          setPredictions((prev) => {
-            if (!prev) return prev;
-            return { ...prev, trails: prev.trails.map((t) => ({ ...t, geometry: geometries[t.cotrex_id] || t.geometry })) };
-          });
-          setGeometryLoaded(true);
+        // Geometry will be loaded progressively by TrailMap based on viewport
+      } else {
+        // Fallback to API pagination if static file unavailable
+        console.warn('Static index unavailable, falling back to API...');
+        const pageSize = 1000;
+        let allTrails: any[] = [];
+        let offset = 0;
+        let metadata: any = null;
+
+        while (true) {
+          const response = await fetch(
+            `/api/predictions?geometry=false&limit=${pageSize}&offset=${offset}`,
+            { cache: 'no-store' }
+          );
+          if (!response.ok) throw new Error('API failed');
+
+          const data = await response.json();
+          if (!metadata) metadata = data;
+          allTrails = allTrails.concat(data.trails);
+
+          if (data.trails.length < pageSize) break;
+          offset += pageSize;
         }
-      } catch {
-        setError('Unable to load trail data. Please try again later.');
+
+        const summary = allTrails.reduce((acc: any, t: any) => {
+          acc[t.condition] = (acc[t.condition] || 0) + 1;
+          return acc;
+        }, {});
+
+        setPredictions({
+          generated_at: metadata.generated_at,
+          region: metadata.region,
+          total_trails: allTrails.length,
+          summary,
+          trails: allTrails,
+        });
+        setLastFetched(new Date());
+        setLoading(false);
       }
-    } finally {
+    } catch (err) {
+      console.error('Failed to load trail data:', err);
+      setError('Unable to load trail data. Please try again later.');
       setLoading(false);
+    } finally {
       setRefreshing(false);
     }
   }
